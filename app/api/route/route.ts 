@@ -1,0 +1,503 @@
+import { NextRequest, NextResponse } from "next/server";
+
+type OverpassElement = {
+    type: "node" | "way" | "relation";
+    id: number;
+    lat?: number;
+    lon?: number;
+    center?: {
+        lat: number;
+        lon: number;
+    };
+    tags?: Record<string, string>;
+};
+
+type OverpassResponse = {
+    elements?: OverpassElement[];
+};
+
+type ParkingResult = {
+    id: string;
+    name: string;
+    lat: number;
+    lng: number;
+    price: string;
+    tags: string[];
+    emoji: string;
+    photo: string;
+    distance: number;
+};
+
+const OVERPASS_URLS = [
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+];
+
+function distanceMeters(
+    a: { lat: number; lng: number },
+    b: { lat: number; lng: number },
+) {
+    const R = 6371000;
+
+    const toRad = (value: number) =>
+        (value * Math.PI) / 180;
+
+    const dLat =
+        toRad(b.lat - a.lat);
+
+    const dLng =
+        toRad(b.lng - a.lng);
+
+    const value =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(a.lat)) *
+            Math.cos(toRad(b.lat)) *
+            Math.sin(dLng / 2) ** 2;
+
+    return (
+        2 *
+        R *
+        Math.asin(Math.sqrt(value))
+    );
+}
+
+async function fetchOverpass(
+    url: string,
+    query: string,
+) {
+    const controller =
+        new AbortController();
+
+    const timeout =
+        setTimeout(() => {
+            controller.abort();
+        }, 25000);
+
+    try {
+        const response =
+            await fetch(url, {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded;charset=UTF-8",
+
+                    "User-Agent":
+                        "ParkPal-Okinawa/0.1",
+                },
+
+                body:
+                    new URLSearchParams({
+                        data: query,
+                    }).toString(),
+
+                signal:
+                    controller.signal,
+
+                cache: "no-store",
+            });
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`,
+            );
+        }
+
+        return (
+            await response.json()
+        ) as OverpassResponse;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+export async function GET(
+    request: NextRequest,
+) {
+    const params =
+        request.nextUrl.searchParams;
+
+    const lat =
+        Number(params.get("lat"));
+
+    const lng =
+        Number(params.get("lng"));
+
+    const requestedRadius =
+        Number(
+            params.get("radius") ??
+                "1500",
+        );
+
+    const radius =
+        Math.min(
+            Math.max(
+                requestedRadius,
+                200,
+            ),
+            3000,
+        );
+
+    if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lng)
+    ) {
+        return NextResponse.json(
+            {
+                error:
+                    "位置情報が正しくありません",
+            },
+            {
+                status: 400,
+            },
+        );
+    }
+
+    const query = `
+[out:json][timeout:20];
+(
+  node["amenity"="parking"](around:${radius},${lat},${lng});
+  way["amenity"="parking"](around:${radius},${lat},${lng});
+  relation["amenity"="parking"](around:${radius},${lat},${lng});
+);
+out center tags;
+`;
+
+    let data:
+        | OverpassResponse
+        | null = null;
+
+    let lastError =
+        "接続できませんでした";
+
+    for (
+        const url
+        of OVERPASS_URLS
+    ) {
+        try {
+            data =
+                await fetchOverpass(
+                    url,
+                    query,
+                );
+
+            break;
+        } catch (error) {
+            lastError =
+                error instanceof Error
+                    ? error.message
+                    : "fetch failed";
+
+            console.error(
+                "Overpass failed:",
+                url,
+                lastError,
+            );
+        }
+    }
+
+    if (!data) {
+        return NextResponse.json(
+            {
+                error:
+                    "駐車場情報を取得できませんでした",
+
+                detail:
+                    lastError,
+            },
+            {
+                status: 502,
+            },
+        );
+    }
+
+    const origin = {
+        lat,
+        lng,
+    };
+
+    const parkings =
+        (data.elements ?? [])
+            .map(
+                (
+                    element,
+                ): ParkingResult | null => {
+                    const tags =
+                        element.tags ?? {};
+
+                    const parkingLat =
+                        element.lat ??
+                        element.center
+                            ?.lat;
+
+                    const parkingLng =
+                        element.lon ??
+                        element.center
+                            ?.lon;
+
+                    if (
+                        parkingLat ===
+                            undefined ||
+                        parkingLng ===
+                            undefined
+                    ) {
+                        return null;
+                    }
+
+                    const point = {
+                        lat:
+                            parkingLat,
+                        lng:
+                            parkingLng,
+                    };
+
+                    const distance =
+                        distanceMeters(
+                            origin,
+                            point,
+                        );
+
+                    if (
+                        distance >
+                        radius + 100
+                    ) {
+                        return null;
+                    }
+
+                    const access =
+                        tags.access
+                            ?.toLowerCase();
+
+                    if (
+                        access ===
+                            "private" ||
+                        access ===
+                            "no" ||
+                        access ===
+                            "emergency"
+                    ) {
+                        return null;
+                    }
+
+                    const parkingType =
+                        tags.parking
+                            ?.toLowerCase();
+
+                    if (
+                        parkingType ===
+                            "lane" ||
+                        parkingType ===
+                            "street_side"
+                    ) {
+                        return null;
+                    }
+
+                    const rawName =
+                        tags.name
+                            ?.trim() ||
+                        tags.operator
+                            ?.trim();
+
+                    /*
+                     * 名前なし駐車場は
+                     * 今回は表示しない。
+                     *
+                     * "駐車場 123456"
+                     * みたいなのを防ぐ。
+                     */
+                    if (!rawName) {
+                        return null;
+                    }
+
+                    const info:
+                        string[] = [];
+
+                    if (
+                        tags.operator &&
+                        tags.operator !==
+                            rawName
+                    ) {
+                        info.push(
+                            `運営: ${tags.operator}`,
+                        );
+                    }
+
+                    if (
+                        tags.capacity
+                    ) {
+                        info.push(
+                            `${tags.capacity}台`,
+                        );
+                    }
+
+                    if (
+                        tags.fee ===
+                        "no"
+                    ) {
+                        info.push(
+                            "無料",
+                        );
+                    }
+
+                    if (
+                        tags.fee ===
+                        "yes"
+                    ) {
+                        info.push(
+                            "有料",
+                        );
+                    }
+
+                    if (
+                        access ===
+                        "customers"
+                    ) {
+                        info.push(
+                            "施設利用者向け",
+                        );
+                    }
+
+                    if (
+                        parkingType ===
+                        "surface"
+                    ) {
+                        info.push(
+                            "平面駐車場",
+                        );
+                    }
+
+                    if (
+                        parkingType ===
+                        "multi-storey"
+                    ) {
+                        info.push(
+                            "立体駐車場",
+                        );
+                    }
+
+                    if (
+                        parkingType ===
+                        "underground"
+                    ) {
+                        info.push(
+                            "地下駐車場",
+                        );
+                    }
+
+                    if (
+                        info.length ===
+                        0
+                    ) {
+                        info.push(
+                            "OpenStreetMap登録駐車場",
+                        );
+                    }
+
+                    let price =
+                        "料金情報なし";
+
+                    if (
+                        tags.fee ===
+                        "no"
+                    ) {
+                        price =
+                            "無料";
+                    }
+
+                    if (
+                        tags.fee ===
+                        "yes"
+                    ) {
+                        price =
+                            "有料・料金未登録";
+                    }
+
+                    return {
+                        id:
+                            `osm-${element.type}-${element.id}`,
+
+                        name:
+                            rawName,
+
+                        lat:
+                            parkingLat,
+
+                        lng:
+                            parkingLng,
+
+                        price,
+
+                        tags:
+                            info,
+
+                        emoji:
+                            "🅿️",
+
+                        photo:
+                            "",
+
+                        distance,
+                    };
+                },
+            )
+            .filter(
+                (
+                    parking,
+                ): parking is ParkingResult =>
+                    parking !== null,
+            )
+            .sort(
+                (a, b) =>
+                    a.distance -
+                    b.distance,
+            );
+
+    /*
+     * 同じ駐車場が
+     * node / way で重複している場合を除外
+     */
+    const unique =
+        parkings.filter(
+            (
+                parking,
+                index,
+                array,
+            ) => {
+                return (
+                    array.findIndex(
+                        (
+                            other,
+                        ) => {
+                            return (
+                                other.name ===
+                                    parking.name &&
+                                Math.abs(
+                                    other.lat -
+                                        parking.lat,
+                                ) <
+                                    0.0002 &&
+                                Math.abs(
+                                    other.lng -
+                                        parking.lng,
+                                ) <
+                                    0.0002
+                            );
+                        },
+                    ) ===
+                    index
+                );
+            },
+        );
+
+    return NextResponse.json({
+        parkings:
+            unique.slice(
+                0,
+                30,
+            ),
+
+        count:
+            unique.length,
+    });
+}
