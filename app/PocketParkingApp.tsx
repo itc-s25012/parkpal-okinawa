@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
+
 import type * as Leaflet from "leaflet";
 
 import {
@@ -18,7 +24,9 @@ const DEFAULT_CENTER = {
 
 const DEFAULT_ZOOM = 15;
 
-type Mode = "student" | "tourist";
+type Mode =
+    | "student"
+    | "tourist";
 
 type Language =
     | "ja"
@@ -43,6 +51,17 @@ type ParkingSpot = {
     emoji: string;
     photo: string;
     distance: number;
+
+    securityCamera?: boolean;
+    streetLight?: boolean;
+    securityStaff?: boolean;
+    safetyScore?: number | null;
+    studentFriendly?: boolean;
+    openingHours?: string | null;
+    capacity?: string | number | null;
+    parkingType?: string | null;
+    note?: string | null;
+    source?: string | null;
 };
 
 type ParkingResponse = {
@@ -55,670 +74,1362 @@ type ParkingResponse = {
 type Chip = {
     label: string;
     icon: string;
-    kind: "landmark" | "area";
+    kind:
+        | "landmark"
+        | "area";
     query: string;
 };
 
-const STUDENT_CHIPS: Chip[] = [
+const STUDENT_CHIPS:
+    Chip[] = [
     {
-        label: "ITカレッジ",
-        icon: "🏫",
-        kind: "landmark",
-        query: "ITカレッジ",
+        label:
+            "ITカレッジ",
+        icon:
+            "🏫",
+        kind:
+            "landmark",
+        query:
+            "ITカレッジ",
     },
     {
-        label: "開南",
-        icon: "📍",
-        kind: "area",
-        query: "開南",
+        label:
+            "開南",
+        icon:
+            "📍",
+        kind:
+            "area",
+        query:
+            "開南",
     },
     {
-        label: "安里",
-        icon: "📍",
-        kind: "area",
-        query: "安里",
+        label:
+            "安里",
+        icon:
+            "📍",
+        kind:
+            "area",
+        query:
+            "安里",
     },
     {
-        label: "壺川",
-        icon: "📍",
-        kind: "area",
-        query: "壺川",
+        label:
+            "壺川",
+        icon:
+            "📍",
+        kind:
+            "area",
+        query:
+            "壺川",
     },
     {
-        label: "コザ",
-        icon: "📍",
-        kind: "area",
-        query: "コザ",
-    },
-];
-
-const TOURIST_CHIPS: Chip[] = [
-    {
-        label: "国際通り",
-        icon: "🛍️",
-        kind: "landmark",
-        query: "国際通り",
-    },
-    {
-        label: "首里城",
-        icon: "🏯",
-        kind: "landmark",
-        query: "首里城",
-    },
-    {
-        label: "美ら海",
-        icon: "🐟",
-        kind: "landmark",
-        query: "美ら海",
-    },
-    {
-        label: "アメリカンビレッジ",
-        icon: "🎡",
-        kind: "landmark",
-        query: "アメリカンビレッジ",
-    },
-    {
-        label: "古宇利島",
-        icon: "🏝️",
-        kind: "landmark",
-        query: "古宇利",
+        label:
+            "コザ",
+        icon:
+            "📍",
+        kind:
+            "area",
+        query:
+            "コザ",
     },
 ];
 
-const LANGUAGE_LABELS: Record<Language, string> = {
-    ja: "🇯🇵 日本語",
-    en: "🇺🇸 English",
-    "zh-CN": "🇨🇳 简体中文",
-    "zh-TW": "🇹🇼 繁體中文",
-    ko: "🇰🇷 한국어",
+const TOURIST_CHIPS:
+    Chip[] = [
+    {
+        label:
+            "国際通り",
+        icon:
+            "🛍️",
+        kind:
+            "landmark",
+        query:
+            "国際通り",
+    },
+    {
+        label:
+            "首里城",
+        icon:
+            "🏯",
+        kind:
+            "landmark",
+        query:
+            "首里城",
+    },
+    {
+        label:
+            "美ら海",
+        icon:
+            "🐟",
+        kind:
+            "landmark",
+        query:
+            "美ら海",
+    },
+    {
+        label:
+            "アメリカンビレッジ",
+        icon:
+            "🎡",
+        kind:
+            "landmark",
+        query:
+            "アメリカンビレッジ",
+    },
+    {
+        label:
+            "古宇利島",
+        icon:
+            "🏝️",
+        kind:
+            "landmark",
+        query:
+            "古宇利",
+    },
+];
+
+const LANGUAGE_LABELS:
+    Record<
+        Language,
+        string
+    > = {
+    ja:
+        "🇯🇵 日本語",
+
+    en:
+        "🇺🇸 English",
+
+    "zh-CN":
+        "🇨🇳 简体中文",
+
+    "zh-TW":
+        "🇹🇼 繁體中文",
+
+    ko:
+        "🇰🇷 한국어",
 };
 
 const TEXT = {
     ja: {
-        student: "学生",
-        tourist: "観光",
-        searchStudent: "学校・塾・エリアを検索",
-        searchTourist: "観光地・エリアを検索",
-        chooseDestination: "目的地を選んでください",
-        nearbyParking: "目的地に近い駐車場",
-        loadingParking: "近くの駐車場を検索中…",
-        noParking: "近くに駐車場が見つかりませんでした",
-        availability: "空き情報",
-        noLiveData: "まだLIVE情報なし",
-        closest: "一番近い",
-        walk: "徒歩",
-        drive: "車",
-        parkingInfo: "駐車場情報",
-        route: "経路を見る",
-        error: "駐車場情報を取得できませんでした",
+        student:
+            "学生",
+
+        tourist:
+            "観光",
+
+        searchStudent:
+            "学校・塾・エリアを検索",
+
+        searchTourist:
+            "観光地・エリアを検索",
+
+        chooseDestination:
+            "目的地を選んでください",
+
+        nearbyParking:
+            "目的地に近い駐車場",
+
+        loadingParking:
+            "近くの駐車場を検索中…",
+
+        noParking:
+            "近くに駐車場が見つかりませんでした",
+
+        availability:
+            "空き情報",
+
+        noLiveData:
+            "まだLIVE情報なし",
+
+        closest:
+            "一番近い",
+
+        walk:
+            "徒歩",
+
+        drive:
+            "車",
+
+        parkingInfo:
+            "駐車場情報",
+
+        route:
+            "Google Mapsでナビ",
+
+        count:
+            "件",
+
+        minute:
+            "分",
+
+        distance:
+            "距離",
+
+        safety:
+            "安全度",
+
+        currentDestination:
+            "目的地",
+
+        camera:
+            "防犯カメラ",
+
+        lighting:
+            "街灯",
+
+        yes:
+            "あり",
+
+        no:
+            "情報なし",
+
+        error:
+            "駐車場情報を取得できませんでした",
     },
 
     en: {
-        student: "Student",
-        tourist: "Travel",
-        searchStudent: "Search school, cram school or area",
-        searchTourist: "Search tourist spot or area",
-        chooseDestination: "Choose a destination",
-        nearbyParking: "Nearby parking",
-        loadingParking: "Searching nearby parking…",
-        noParking: "No parking found nearby",
-        availability: "Availability",
-        noLiveData: "No live data yet",
-        closest: "Closest",
-        walk: "Walk",
-        drive: "Drive",
-        parkingInfo: "Parking information",
-        route: "Directions",
-        error: "Could not load parking information",
+        student:
+            "Student",
+
+        tourist:
+            "Travel",
+
+        searchStudent:
+            "Search school, cram school or area",
+
+        searchTourist:
+            "Search tourist spot or area",
+
+        chooseDestination:
+            "Choose a destination",
+
+        nearbyParking:
+            "Nearby parking",
+
+        loadingParking:
+            "Searching nearby parking…",
+
+        noParking:
+            "No parking found nearby",
+
+        availability:
+            "Availability",
+
+        noLiveData:
+            "No live data yet",
+
+        closest:
+            "Closest",
+
+        walk:
+            "Walk",
+
+        drive:
+            "Drive",
+
+        parkingInfo:
+            "Parking information",
+
+        route:
+            "Navigate with Google Maps",
+
+        count:
+            "",
+
+        minute:
+            "min",
+
+        distance:
+            "Distance",
+
+        safety:
+            "Safety score",
+
+        currentDestination:
+            "Destination",
+
+        camera:
+            "Security camera",
+
+        lighting:
+            "Lighting",
+
+        yes:
+            "Available",
+
+        no:
+            "No data",
+
+        error:
+            "Could not load parking information",
     },
 
     "zh-CN": {
-        student: "学生",
-        tourist: "观光",
-        searchStudent: "搜索学校、补习班或地区",
-        searchTourist: "搜索景点或地区",
-        chooseDestination: "请选择目的地",
-        nearbyParking: "附近停车场",
-        loadingParking: "正在搜索附近停车场…",
-        noParking: "附近没有找到停车场",
-        availability: "空位信息",
-        noLiveData: "暂无实时信息",
-        closest: "最近",
-        walk: "步行",
-        drive: "驾车",
-        parkingInfo: "停车场信息",
-        route: "查看路线",
-        error: "无法获取停车场信息",
+        student:
+            "学生",
+
+        tourist:
+            "观光",
+
+        searchStudent:
+            "搜索学校、补习班或地区",
+
+        searchTourist:
+            "搜索景点或地区",
+
+        chooseDestination:
+            "请选择目的地",
+
+        nearbyParking:
+            "附近停车场",
+
+        loadingParking:
+            "正在搜索附近停车场…",
+
+        noParking:
+            "附近没有找到停车场",
+
+        availability:
+            "空位信息",
+
+        noLiveData:
+            "暂无实时信息",
+
+        closest:
+            "最近",
+
+        walk:
+            "步行",
+
+        drive:
+            "驾车",
+
+        parkingInfo:
+            "停车场信息",
+
+        route:
+            "使用 Google Maps 导航",
+
+        count:
+            "个",
+
+        minute:
+            "分钟",
+
+        distance:
+            "距离",
+
+        safety:
+            "安全评分",
+
+        currentDestination:
+            "目的地",
+
+        camera:
+            "监控摄像头",
+
+        lighting:
+            "照明",
+
+        yes:
+            "有",
+
+        no:
+            "暂无信息",
+
+        error:
+            "无法获取停车场信息",
     },
 
     "zh-TW": {
-        student: "學生",
-        tourist: "觀光",
-        searchStudent: "搜尋學校、補習班或地區",
-        searchTourist: "搜尋景點或地區",
-        chooseDestination: "請選擇目的地",
-        nearbyParking: "附近停車場",
-        loadingParking: "正在搜尋附近停車場…",
-        noParking: "附近找不到停車場",
-        availability: "空位資訊",
-        noLiveData: "暫無即時資訊",
-        closest: "最近",
-        walk: "步行",
-        drive: "開車",
-        parkingInfo: "停車場資訊",
-        route: "查看路線",
-        error: "無法取得停車場資訊",
+        student:
+            "學生",
+
+        tourist:
+            "觀光",
+
+        searchStudent:
+            "搜尋學校、補習班或地區",
+
+        searchTourist:
+            "搜尋景點或地區",
+
+        chooseDestination:
+            "請選擇目的地",
+
+        nearbyParking:
+            "附近停車場",
+
+        loadingParking:
+            "正在搜尋附近停車場…",
+
+        noParking:
+            "附近找不到停車場",
+
+        availability:
+            "空位資訊",
+
+        noLiveData:
+            "暫無即時資訊",
+
+        closest:
+            "最近",
+
+        walk:
+            "步行",
+
+        drive:
+            "開車",
+
+        parkingInfo:
+            "停車場資訊",
+
+        route:
+            "使用 Google Maps 導航",
+
+        count:
+            "個",
+
+        minute:
+            "分鐘",
+
+        distance:
+            "距離",
+
+        safety:
+            "安全評分",
+
+        currentDestination:
+            "目的地",
+
+        camera:
+            "監視器",
+
+        lighting:
+            "照明",
+
+        yes:
+            "有",
+
+        no:
+            "暫無資訊",
+
+        error:
+            "無法取得停車場資訊",
     },
 
     ko: {
-        student: "학생",
-        tourist: "관광",
-        searchStudent: "학교·학원·지역 검색",
-        searchTourist: "관광지·지역 검색",
-        chooseDestination: "목적지를 선택하세요",
-        nearbyParking: "주변 주차장",
-        loadingParking: "주변 주차장을 찾는 중…",
-        noParking: "주변 주차장을 찾지 못했습니다",
-        availability: "주차 가능 여부",
-        noLiveData: "실시간 정보 없음",
-        closest: "가장 가까움",
-        walk: "도보",
-        drive: "차량",
-        parkingInfo: "주차장 정보",
-        route: "길찾기",
-        error: "주차장 정보를 가져오지 못했습니다",
+        student:
+            "학생",
+
+        tourist:
+            "관광",
+
+        searchStudent:
+            "학교·학원·지역 검색",
+
+        searchTourist:
+            "관광지·지역 검색",
+
+        chooseDestination:
+            "목적지를 선택하세요",
+
+        nearbyParking:
+            "주변 주차장",
+
+        loadingParking:
+            "주변 주차장을 찾는 중…",
+
+        noParking:
+            "주변 주차장을 찾지 못했습니다",
+
+        availability:
+            "주차 가능 여부",
+
+        noLiveData:
+            "실시간 정보 없음",
+
+        closest:
+            "가장 가까움",
+
+        walk:
+            "도보",
+
+        drive:
+            "차량",
+
+        parkingInfo:
+            "주차장 정보",
+
+        route:
+            "Google Maps로 길찾기",
+
+        count:
+            "개",
+
+        minute:
+            "분",
+
+        distance:
+            "거리",
+
+        safety:
+            "안전도",
+
+        currentDestination:
+            "목적지",
+
+        camera:
+            "방범 카메라",
+
+        lighting:
+            "조명",
+
+        yes:
+            "있음",
+
+        no:
+            "정보 없음",
+
+        error:
+            "주차장 정보를 가져오지 못했습니다",
+    },
+} satisfies Record<
+    Language,
+    Record<
+        string,
+        string
+    >
+>;
+
+const CHIP_LABELS:
+    Record<
+        Language,
+        Record<
+            string,
+            string
+        >
+    > = {
+    ja: {
+        ITカレッジ:
+            "ITカレッジ",
+        開南:
+            "開南",
+        安里:
+            "安里",
+        壺川:
+            "壺川",
+        コザ:
+            "コザ",
+        国際通り:
+            "国際通り",
+        首里城:
+            "首里城",
+        美ら海:
+            "美ら海",
+        アメリカンビレッジ:
+            "アメリカンビレッジ",
+        古宇利島:
+            "古宇利島",
+    },
+
+    en: {
+        ITカレッジ:
+            "IT College",
+        開南:
+            "Kainan",
+        安里:
+            "Asato",
+        壺川:
+            "Tsubogawa",
+        コザ:
+            "Koza",
+        国際通り:
+            "Kokusai Street",
+        首里城:
+            "Shuri Castle",
+        美ら海:
+            "Churaumi Aquarium",
+        アメリカンビレッジ:
+            "American Village",
+        古宇利島:
+            "Kouri Island",
+    },
+
+    "zh-CN": {
+        ITカレッジ:
+            "IT学院",
+        開南:
+            "开南",
+        安里:
+            "安里",
+        壺川:
+            "壶川",
+        コザ:
+            "胡差",
+        国際通り:
+            "国际通",
+        首里城:
+            "首里城",
+        美ら海:
+            "美丽海水族馆",
+        アメリカンビレッジ:
+            "美国村",
+        古宇利島:
+            "古宇利岛",
+    },
+
+    "zh-TW": {
+        ITカレッジ:
+            "IT學院",
+        開南:
+            "開南",
+        安里:
+            "安里",
+        壺川:
+            "壺川",
+        コザ:
+            "胡差",
+        国際通り:
+            "國際通",
+        首里城:
+            "首里城",
+        美ら海:
+            "美麗海水族館",
+        アメリカンビレッジ:
+            "美國村",
+        古宇利島:
+            "古宇利島",
+    },
+
+    ko: {
+        ITカレッジ:
+            "IT 칼리지",
+        開南:
+            "카이난",
+        安里:
+            "아사토",
+        壺川:
+            "쓰보가와",
+        コザ:
+            "고자",
+        国際通り:
+            "국제거리",
+        首里城:
+            "슈리성",
+        美ら海:
+            "추라우미 수족관",
+        アメリカンビレッジ:
+            "아메리칸 빌리지",
+        古宇利島:
+            "고우리섬",
     },
 };
 
-function landmarkIcon(landmark: Landmark) {
-    if (landmark.category === "vocational") {
+function chipLabel(
+    language: Language,
+    label: string,
+) {
+    return (
+        CHIP_LABELS[
+            language
+            ][label] ??
+        label
+    );
+}
+
+function landmarkIcon(
+    landmark: Landmark,
+) {
+    if (
+        landmark.category ===
+        "vocational"
+    ) {
         return "🎓";
     }
 
-    if (landmark.category === "cram") {
+    if (
+        landmark.category ===
+        "cram"
+    ) {
         return "📚";
     }
 
-    if (landmark.category === "tourist") {
+    if (
+        landmark.category ===
+        "tourist"
+    ) {
         return "🏝️";
     }
 
     return "📍";
 }
 
+function translatedTargetName(
+    target:
+        | Target
+        | null,
+    language:
+    Language,
+) {
+    if (!target) {
+        return "";
+    }
+
+    return (
+        CHIP_LABELS[
+            language
+            ][target.name] ??
+        target.name
+    );
+}
+
 export function PocketParkingApp() {
     const mapElement =
-        useRef<HTMLDivElement>(null);
+        useRef<HTMLDivElement>(
+            null,
+        );
 
     const mapRef =
-        useRef<Leaflet.Map | null>(null);
+        useRef<
+            Leaflet.Map | null
+        >(null);
 
     const targetMarkerRef =
-        useRef<Leaflet.Marker | null>(null);
+        useRef<
+            Leaflet.Marker | null
+        >(null);
 
     const parkingMarkersRef =
-        useRef<Leaflet.Marker[]>([]);
+        useRef<
+            Leaflet.Marker[]
+        >([]);
 
-    const [ready, setReady] =
+    const [
+        ready,
+        setReady,
+    ] =
         useState(false);
 
-    const [mode, setMode] =
-        useState<Mode>("student");
+    const [
+        mode,
+        setMode,
+    ] =
+        useState<Mode>(
+            "student",
+        );
 
-    const [language, setLanguage] =
-        useState<Language>("ja");
+    const [
+        language,
+        setLanguage,
+    ] =
+        useState<Language>(
+            "ja",
+        );
 
-    const [languageOpen, setLanguageOpen] =
+    const [
+        languageOpen,
+        setLanguageOpen,
+    ] =
         useState(false);
 
-    const [query, setQuery] =
+    const [
+        query,
+        setQuery,
+    ] =
         useState("");
 
-    const [focused, setFocused] =
+    const [
+        focused,
+        setFocused,
+    ] =
         useState(false);
 
-    const [target, setTarget] =
-        useState<Target | null>(null);
+    const [
+        target,
+        setTarget,
+    ] =
+        useState<
+            Target | null
+        >(null);
 
-    const [parkings, setParkings] =
-        useState<ParkingSpot[]>([]);
+    const [
+        parkings,
+        setParkings,
+    ] =
+        useState<
+            ParkingSpot[]
+        >([]);
 
-    const [selected, setSelected] =
-        useState<ParkingSpot | null>(null);
+    const [
+        selected,
+        setSelected,
+    ] =
+        useState<
+            ParkingSpot | null
+        >(null);
 
-    const [parkingLoading, setParkingLoading] =
+    const [
+        parkingLoading,
+        setParkingLoading,
+    ] =
         useState(false);
 
-    const [parkingError, setParkingError] =
+    const [
+        parkingError,
+        setParkingError,
+    ] =
         useState("");
 
-    const t = TEXT[language];
+    const t =
+        TEXT[language];
 
     const chips =
-        mode === "tourist"
+        mode ===
+        "tourist"
             ? TOURIST_CHIPS
             : STUDENT_CHIPS;
 
-    const suggestions = useMemo(() => {
-        const q =
-            query.trim().toLowerCase();
+    const suggestions =
+        useMemo(
+            () => {
+                const q =
+                    query
+                        .trim()
+                        .toLowerCase();
 
-        if (!q) {
-            return [];
-        }
-
-        return ALL_LANDMARKS
-            .filter((landmark) => {
-                if (mode === "tourist") {
-                    return (
-                        landmark.category === "tourist" ||
-                        landmark.category === "area"
-                    );
-                }
-
-                return landmark.category !== "tourist";
-            })
-            .filter((landmark) => {
-                const text = [
-                    landmark.name,
-                    landmark.kana ?? "",
-                    landmark.area ?? "",
-                    ...landmark.aliases,
-                ]
-                    .join(" ")
-                    .toLowerCase();
-
-                return text.includes(q);
-            })
-            .slice(0, 8);
-    }, [query, mode]);
-
-    /*
-     * 地図初期化
-     */
-    useEffect(() => {
-        let cancelled = false;
-
-        async function initMap() {
-            const L =
-                await import("leaflet");
-
-            if (
-                cancelled ||
-                !mapElement.current ||
-                mapRef.current
-            ) {
-                return;
-            }
-
-            const map =
-                L.map(
-                    mapElement.current,
-                    {
-                        center: [
-                            DEFAULT_CENTER.lat,
-                            DEFAULT_CENTER.lng,
-                        ],
-                        zoom:
-                        DEFAULT_ZOOM,
-                        zoomControl:
-                            false,
-                    },
-                );
-
-            /*
-             * 薄い地図
-             */
-            L.tileLayer(
-                "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-                {
-                    maxZoom: 20,
-                    attribution:
-                        "&copy; OpenStreetMap contributors &copy; CARTO",
-                },
-            ).addTo(map);
-
-            mapRef.current = map;
-
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 100);
-
-            setReady(true);
-        }
-
-        void initMap();
-
-        return () => {
-            cancelled = true;
-
-            parkingMarkersRef.current.forEach(
-                (marker) => {
-                    marker.remove();
-                },
-            );
-
-            parkingMarkersRef.current = [];
-
-            if (targetMarkerRef.current) {
-                targetMarkerRef.current.remove();
-                targetMarkerRef.current = null;
-            }
-
-            if (mapRef.current) {
-                mapRef.current.remove();
-                mapRef.current = null;
-            }
-        };
-    }, []);
-
-    /*
-     * 本物の駐車場取得
-     */
-    useEffect(() => {
-        if (!target) {
-            return;
-        }
-
-        const controller =
-            new AbortController();
-
-        async function loadParkings() {
-            try {
-                const params =
-                    new URLSearchParams({
-                        lat:
-                            String(
-                                target!.lat,
-                            ),
-
-                        lng:
-                            String(
-                                target!.lng,
-                            ),
-
-                        radius:
-                            "1500",
-                    });
-
-                const response =
-                    await fetch(
-                        `/api/parkings?${params.toString()}`,
-                        {
-                            signal:
-                            controller.signal,
-                        },
-                    );
-
-                const text =
-                    await response.text();
-
-                if (!response.ok) {
-                    throw new Error(
-                        text,
-                    );
-                }
-
-                const data =
-                    JSON.parse(
-                        text,
-                    ) as ParkingResponse;
-
-                setParkings(
-                    data.parkings ??
-                    [],
-                );
-
-                setSelected(null);
-
-                setParkingError("");
-            } catch (error) {
                 if (
-                    error instanceof DOMException &&
-                    error.name === "AbortError"
+                    !q
+                ) {
+                    return [];
+                }
+
+                return ALL_LANDMARKS
+                    .filter(
+                        (
+                            landmark,
+                        ) => {
+                            if (
+                                mode ===
+                                "tourist"
+                            ) {
+                                return (
+                                    landmark.category ===
+                                    "tourist" ||
+                                    landmark.category ===
+                                    "area"
+                                );
+                            }
+
+                            return (
+                                landmark.category !==
+                                "tourist"
+                            );
+                        },
+                    )
+                    .filter(
+                        (
+                            landmark,
+                        ) => {
+                            const text =
+                                [
+                                    landmark.name,
+                                    landmark.kana ??
+                                    "",
+                                    landmark.area ??
+                                    "",
+                                    ...landmark.aliases,
+                                ]
+                                    .join(
+                                        " ",
+                                    )
+                                    .toLowerCase();
+
+                            return text.includes(
+                                q,
+                            );
+                        },
+                    )
+                    .slice(
+                        0,
+                        8,
+                    );
+            },
+            [
+                query,
+                mode,
+            ],
+        );
+
+    useEffect(
+        () => {
+            let cancelled =
+                false;
+
+            async function initMap() {
+                const L =
+                    await import(
+                        "leaflet"
+                        );
+
+                if (
+                    cancelled ||
+                    !mapElement.current ||
+                    mapRef.current
                 ) {
                     return;
                 }
 
-                console.error(
-                    "Parking load error:",
-                    error,
+                const map =
+                    L.map(
+                        mapElement.current,
+                        {
+                            center:
+                                [
+                                    DEFAULT_CENTER.lat,
+                                    DEFAULT_CENTER.lng,
+                                ],
+
+                            zoom:
+                            DEFAULT_ZOOM,
+
+                            zoomControl:
+                                false,
+                        },
+                    );
+
+                L.tileLayer(
+                    "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                    {
+                        maxZoom:
+                            20,
+
+                        attribution:
+                            "&copy; OpenStreetMap contributors &copy; CARTO",
+                    },
+                ).addTo(
+                    map,
                 );
 
-                setParkings([]);
+                mapRef.current =
+                    map;
 
-                setParkingError(
-                    t.error,
+                setTimeout(
+                    () => {
+                        map.invalidateSize();
+                    },
+                    100,
                 );
-            } finally {
-                setParkingLoading(
-                    false,
+
+                setReady(
+                    true,
                 );
             }
-        }
 
-        void loadParkings();
+            void initMap();
 
-        return () => {
-            controller.abort();
-        };
-    }, [target, t.error]);
+            return () => {
+                cancelled =
+                    true;
 
-    /*
-     * 地図のマーカー
-     */
-    useEffect(() => {
-        let cancelled = false;
+                parkingMarkersRef.current.forEach(
+                    (
+                        marker,
+                    ) => {
+                        marker.remove();
+                    },
+                );
 
-        async function drawMarkers() {
-            const map =
-                mapRef.current;
+                parkingMarkersRef.current =
+                    [];
 
+                if (
+                    targetMarkerRef.current
+                ) {
+                    targetMarkerRef.current.remove();
+
+                    targetMarkerRef.current =
+                        null;
+                }
+
+                if (
+                    mapRef.current
+                ) {
+                    mapRef.current.remove();
+
+                    mapRef.current =
+                        null;
+                }
+            };
+        },
+        [],
+    );
+
+    useEffect(
+        () => {
             if (
-                !map ||
-                !ready
+                !target
             ) {
                 return;
             }
 
-            const L =
-                await import("leaflet");
+            const controller =
+                new AbortController();
 
-            if (cancelled) {
-                return;
+            async function loadParkings() {
+                try {
+                    const params =
+                        new URLSearchParams(
+                            {
+                                lat:
+                                    String(
+                                        target!.lat,
+                                    ),
+
+                                lng:
+                                    String(
+                                        target!.lng,
+                                    ),
+
+                                radius:
+                                    "1500",
+
+                                lang:
+                                language,
+                            },
+                        );
+
+                    const response =
+                        await fetch(
+                            `/api/parkings?${params.toString()}`,
+                            {
+                                signal:
+                                controller.signal,
+                            },
+                        );
+
+                    const text =
+                        await response.text();
+
+                    if (
+                        !response.ok
+                    ) {
+                        throw new Error(
+                            text,
+                        );
+                    }
+
+                    const data =
+                        JSON.parse(
+                            text,
+                        ) as ParkingResponse;
+
+                    setParkings(
+                        data.parkings ??
+                        [],
+                    );
+
+                    setSelected(
+                        null,
+                    );
+
+                    setParkingError(
+                        "",
+                    );
+                } catch (
+                    error
+                    ) {
+                    if (
+                        error instanceof
+                        DOMException &&
+                        error.name ===
+                        "AbortError"
+                    ) {
+                        return;
+                    }
+
+                    console.error(
+                        "Parking load error:",
+                        error,
+                    );
+
+                    setParkings(
+                        [],
+                    );
+
+                    setParkingError(
+                        t.error,
+                    );
+                } finally {
+                    setParkingLoading(
+                        false,
+                    );
+                }
             }
 
-            parkingMarkersRef.current.forEach(
-                (marker) => {
-                    marker.remove();
-                },
-            );
+            void loadParkings();
 
-            parkingMarkersRef.current = [];
+            return () => {
+                controller.abort();
+            };
+        },
+        [
+            target,
+            language,
+            t.error,
+        ],
+    );
 
-            if (targetMarkerRef.current) {
-                targetMarkerRef.current.remove();
+    useEffect(
+        () => {
+            let cancelled =
+                false;
 
-                targetMarkerRef.current = null;
-            }
+            async function drawMarkers() {
+                const map =
+                    mapRef.current;
 
-            if (!target) {
-                map.setView(
-                    [
-                        DEFAULT_CENTER.lat,
-                        DEFAULT_CENTER.lng,
-                    ],
-                    DEFAULT_ZOOM,
+                if (
+                    !map ||
+                    !ready
+                ) {
+                    return;
+                }
+
+                const L =
+                    await import(
+                        "leaflet"
+                        );
+
+                if (
+                    cancelled
+                ) {
+                    return;
+                }
+
+                parkingMarkersRef.current.forEach(
+                    (
+                        marker,
+                    ) => {
+                        marker.remove();
+                    },
                 );
 
-                return;
-            }
+                parkingMarkersRef.current =
+                    [];
 
-            /*
-             * 目的地マーカー
-             */
-            const targetIcon =
-                L.divIcon({
-                    className: "",
+                if (
+                    targetMarkerRef.current
+                ) {
+                    targetMarkerRef.current.remove();
 
-                    html: `
-                        <div style="
-                            width:46px;
-                            height:46px;
-                            border-radius:50%;
-                            background:#0f172a;
-                            border:4px solid white;
-                            box-shadow:0 8px 22px rgba(0,0,0,.25);
-                            display:flex;
-                            align-items:center;
-                            justify-content:center;
-                            font-size:20px;
-                        ">
-                            🎯
-                        </div>
-                    `,
+                    targetMarkerRef.current =
+                        null;
+                }
 
-                    iconSize: [
-                        46,
-                        46,
-                    ],
+                if (
+                    !target
+                ) {
+                    map.setView(
+                        [
+                            DEFAULT_CENTER.lat,
+                            DEFAULT_CENTER.lng,
+                        ],
+                        DEFAULT_ZOOM,
+                    );
 
-                    iconAnchor: [
-                        23,
-                        23,
-                    ],
-                });
+                    return;
+                }
 
-            targetMarkerRef.current =
-                L.marker(
+                const targetIcon =
+                    L.divIcon(
+                        {
+                            className:
+                                "",
+
+                            html: `
+<div style="
+width:46px;
+height:46px;
+border-radius:50%;
+background:#0f172a;
+border:4px solid white;
+box-shadow:0 8px 22px rgba(0,0,0,.25);
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:20px;">
+🎯
+</div>
+`,
+
+                            iconSize:
+                                [
+                                    46,
+                                    46,
+                                ],
+
+                            iconAnchor:
+                                [
+                                    23,
+                                    23,
+                                ],
+                        },
+                    );
+
+                targetMarkerRef.current =
+                    L.marker(
+                        [
+                            target.lat,
+                            target.lng,
+                        ],
+                        {
+                            icon:
+                            targetIcon,
+
+                            title:
+                                translatedTargetName(
+                                    target,
+                                    language,
+                                ),
+                        },
+                    ).addTo(
+                        map,
+                    );
+
+                map.setView(
                     [
                         target.lat,
                         target.lng,
                     ],
+                    16,
                     {
-                        icon:
-                        targetIcon,
-
-                        title:
-                        target.name,
+                        animate:
+                            true,
                     },
-                ).addTo(map);
+                );
 
-            /*
-             * 目的地周辺だけ表示
-             */
-            map.setView(
-                [
-                    target.lat,
-                    target.lng,
-                ],
-                16,
-                {
-                    animate:
-                        true,
-                },
-            );
+                parkings.forEach(
+                    (
+                        parking,
+                        index,
+                    ) => {
+                        const closest =
+                            index ===
+                            0;
 
-            /*
-             * Pマーカー
-             */
-            parkings.forEach(
-                (
-                    parking,
-                    index,
-                ) => {
-                    const closest =
-                        index === 0;
+                        const background =
+                            closest
+                                ? "#10b981"
+                                : "#2563eb";
 
-                    const background =
-                        closest
-                            ? "#10b981"
-                            : "#2563eb";
+                        const parkingIcon =
+                            L.divIcon(
+                                {
+                                    className:
+                                        "",
 
-                    const parkingIcon =
-                        L.divIcon({
-                            className: "",
+                                    html: `
+<div style="
+width:44px;
+height:44px;
+border-radius:50%;
+background:${background};
+border:3px solid white;
+box-shadow:0 6px 18px rgba(0,0,0,.22);
+display:flex;
+align-items:center;
+justify-content:center;
+color:white;
+font-size:19px;
+font-weight:900;">
+P
+</div>
+`,
 
-                            html: `
-                                <div style="
-                                    width:44px;
-                                    height:44px;
-                                    border-radius:50%;
-                                    background:${background};
-                                    border:3px solid white;
-                                    box-shadow:0 6px 18px rgba(0,0,0,.22);
-                                    display:flex;
-                                    align-items:center;
-                                    justify-content:center;
-                                    color:white;
-                                    font-size:19px;
-                                    font-weight:900;
-                                ">
-                                    P
-                                </div>
-                            `,
+                                    iconSize:
+                                        [
+                                            44,
+                                            44,
+                                        ],
 
-                            iconSize: [
-                                44,
-                                44,
-                            ],
-
-                            iconAnchor: [
-                                22,
-                                22,
-                            ],
-                        });
-
-                    const marker =
-                        L.marker(
-                            [
-                                parking.lat,
-                                parking.lng,
-                            ],
-                            {
-                                icon:
-                                parkingIcon,
-
-                                title:
-                                parking.name,
-                            },
-                        ).addTo(map);
-
-                    marker.on(
-                        "click",
-                        () => {
-                            setSelected(
-                                parking,
+                                    iconAnchor:
+                                        [
+                                            22,
+                                            22,
+                                        ],
+                                },
                             );
-                        },
-                    );
 
-                    parkingMarkersRef.current.push(
-                        marker,
-                    );
-                },
-            );
-        }
+                        const marker =
+                            L.marker(
+                                [
+                                    parking.lat,
+                                    parking.lng,
+                                ],
+                                {
+                                    icon:
+                                    parkingIcon,
 
-        void drawMarkers();
+                                    title:
+                                    parking.name,
+                                },
+                            ).addTo(
+                                map,
+                            );
 
-        return () => {
-            cancelled = true;
-        };
-    }, [target, parkings, ready]);
+                        marker.on(
+                            "click",
+                            () => {
+                                setSelected(
+                                    parking,
+                                );
+                            },
+                        );
+
+                        parkingMarkersRef.current.push(
+                            marker,
+                        );
+                    },
+                );
+            }
+
+            void drawMarkers();
+
+            return () => {
+                cancelled =
+                    true;
+            };
+        },
+        [
+            target,
+            parkings,
+            ready,
+            language,
+        ],
+    );
 
     function startParkingSearch() {
-        setParkingLoading(true);
+        setParkingLoading(
+            true,
+        );
 
-        setParkingError("");
+        setParkingError(
+            "",
+        );
 
-        setParkings([]);
+        setParkings(
+            [],
+        );
 
-        setSelected(null);
+        setSelected(
+            null,
+        );
     }
 
     function selectLandmark(
-        landmark: Landmark,
+        landmark:
+        Landmark,
     ) {
         startParkingSearch();
 
@@ -737,39 +1448,61 @@ export function PocketParkingApp() {
             landmark.name,
         );
 
-        setFocused(false);
+        setFocused(
+            false,
+        );
     }
 
     function clearSearch() {
-        setQuery("");
+        setQuery(
+            "",
+        );
 
-        setTarget(null);
+        setTarget(
+            null,
+        );
 
-        setParkings([]);
+        setParkings(
+            [],
+        );
 
-        setSelected(null);
+        setSelected(
+            null,
+        );
 
-        setFocused(false);
+        setFocused(
+            false,
+        );
 
-        setParkingError("");
+        setParkingError(
+            "",
+        );
 
-        setParkingLoading(false);
+        setParkingLoading(
+            false,
+        );
     }
 
     function switchMode(
-        nextMode: Mode,
+        nextMode:
+        Mode,
     ) {
-        setMode(nextMode);
+        setMode(
+            nextMode,
+        );
 
         clearSearch();
     }
 
     function handleSubmit(
-        event: React.FormEvent<HTMLFormElement>,
+        event:
+        React.FormEvent<HTMLFormElement>,
     ) {
         event.preventDefault();
 
-        if (suggestions[0]) {
+        if (
+            suggestions[0]
+        ) {
             selectLandmark(
                 suggestions[0],
             );
@@ -781,10 +1514,14 @@ export function PocketParkingApp() {
     ) {
         const found =
             ALL_LANDMARKS.find(
-                (landmark) => {
+                (
+                    landmark,
+                ) => {
                     if (
-                        chip.kind === "area" &&
-                        landmark.category !== "area"
+                        chip.kind ===
+                        "area" &&
+                        landmark.category !==
+                        "area"
                     ) {
                         return false;
                     }
@@ -793,7 +1530,9 @@ export function PocketParkingApp() {
                         landmark.name,
                         ...landmark.aliases,
                     ].some(
-                        (text) =>
+                        (
+                            text,
+                        ) =>
                             text
                                 .toLowerCase()
                                 .includes(
@@ -803,7 +1542,9 @@ export function PocketParkingApp() {
                 },
             );
 
-        if (found) {
+        if (
+            found
+        ) {
             selectLandmark(
                 found,
             );
@@ -818,17 +1559,18 @@ export function PocketParkingApp() {
                     "100dvh",
             }}
         >
-            {/* 地図 */}
             <div
-                ref={mapElement}
+                ref={
+                    mapElement
+                }
                 className="absolute inset-0"
                 style={{
-                    zIndex: 0,
+                    zIndex:
+                        0,
                 }}
                 aria-label="ParkPal map"
             />
 
-            {/* ローディング */}
             {!ready && (
                 <div
                     className="absolute inset-0 grid place-items-center bg-white"
@@ -838,18 +1580,15 @@ export function PocketParkingApp() {
                     }}
                 >
                     <div className="text-center">
-
                         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
 
                         <p className="mt-3 text-sm font-bold text-slate-600">
                             Map Loading...
                         </p>
-
                     </div>
                 </div>
             )}
 
-            {/* ParkPal */}
             <div
                 className="absolute left-4 top-4"
                 style={{
@@ -858,7 +1597,6 @@ export function PocketParkingApp() {
                 }}
             >
                 <div className="rounded-2xl bg-slate-950 px-4 py-3 shadow-xl">
-
                     <p className="text-sm font-black text-white">
                         🅿️ ParkPal
                     </p>
@@ -866,11 +1604,9 @@ export function PocketParkingApp() {
                     <p className="text-[9px] font-bold tracking-widest text-slate-400">
                         OKINAWA
                     </p>
-
                 </div>
             </div>
 
-            {/* 学生 / 観光 */}
             <div
                 className="absolute left-1/2 top-4 -translate-x-1/2"
                 style={{
@@ -879,7 +1615,6 @@ export function PocketParkingApp() {
                 }}
             >
                 <div className="flex rounded-2xl bg-white p-1.5 shadow-lg">
-
                     <button
                         type="button"
                         onClick={() =>
@@ -888,12 +1623,16 @@ export function PocketParkingApp() {
                             )
                         }
                         className={`rounded-xl px-4 py-2 text-xs font-black ${
-                            mode === "student"
+                            mode ===
+                            "student"
                                 ? "bg-sky-500 text-white"
                                 : "text-slate-500"
                         }`}
                     >
-                        🎓 {t.student}
+                        🎓{" "}
+                        {
+                            t.student
+                        }
                     </button>
 
                     <button
@@ -904,18 +1643,20 @@ export function PocketParkingApp() {
                             )
                         }
                         className={`rounded-xl px-4 py-2 text-xs font-black ${
-                            mode === "tourist"
+                            mode ===
+                            "tourist"
                                 ? "bg-sky-500 text-white"
                                 : "text-slate-500"
                         }`}
                     >
-                        🏝️ {t.tourist}
+                        🏝️{" "}
+                        {
+                            t.tourist
+                        }
                     </button>
-
                 </div>
             </div>
 
-            {/* 言語 */}
             <div
                 className="absolute right-4 top-4"
                 style={{
@@ -942,7 +1683,6 @@ export function PocketParkingApp() {
 
                 {languageOpen && (
                     <div className="absolute right-0 mt-2 w-40 overflow-hidden rounded-2xl bg-white shadow-xl">
-
                         {(
                             Object.keys(
                                 LANGUAGE_LABELS,
@@ -975,12 +1715,10 @@ export function PocketParkingApp() {
                                 </button>
                             ),
                         )}
-
                     </div>
                 )}
             </div>
 
-            {/* 検索エリア */}
             <div
                 className="absolute left-1/2 top-20 w-[min(92%,680px)] -translate-x-1/2"
                 style={{
@@ -994,7 +1732,6 @@ export function PocketParkingApp() {
                     }
                     className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 shadow-xl"
                 >
-
                     <span className="text-lg">
                         🔍
                     </span>
@@ -1022,7 +1759,8 @@ export function PocketParkingApp() {
                             )
                         }
                         placeholder={
-                            mode === "tourist"
+                            mode ===
+                            "tourist"
                                 ? t.searchTourist
                                 : t.searchStudent
                         }
@@ -1040,15 +1778,12 @@ export function PocketParkingApp() {
                             ×
                         </button>
                     )}
-
                 </form>
 
-                {/* 候補 */}
                 {focused &&
                     suggestions.length >
                     0 && (
                         <div className="mt-2 max-h-64 overflow-y-auto rounded-2xl bg-white shadow-xl">
-
                             {suggestions.map(
                                 (
                                     suggestion,
@@ -1070,16 +1805,15 @@ export function PocketParkingApp() {
                                         }
                                         className="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
                                     >
-                                        <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100">
-                                            {
-                                                landmarkIcon(
-                                                    suggestion,
-                                                )
-                                            }
-                                        </span>
+                                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100">
+                                        {
+                                            landmarkIcon(
+                                                suggestion,
+                                            )
+                                        }
+                                    </span>
 
                                         <div className="min-w-0 flex-1">
-
                                             <p className="truncate text-sm font-black text-slate-800">
                                                 {
                                                     suggestion.name
@@ -1093,20 +1827,18 @@ export function PocketParkingApp() {
                                                     }
                                                 </p>
                                             )}
-
                                         </div>
                                     </button>
                                 ),
                             )}
-
                         </div>
                     )}
 
-                {/* チップ */}
                 <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
-
                     {chips.map(
-                        (chip) => (
+                        (
+                            chip,
+                        ) => (
                             <button
                                 key={
                                     chip.label
@@ -1122,17 +1854,16 @@ export function PocketParkingApp() {
                                 {
                                     chip.icon
                                 }{" "}
-                                {
-                                    chip.label
-                                }
+                                {chipLabel(
+                                    language,
+                                    chip.label,
+                                )}
                             </button>
                         ),
                     )}
-
                 </div>
             </div>
 
-            {/* 目的地名 */}
             {target && (
                 <div
                     className="absolute left-1/2 -translate-x-1/2"
@@ -1145,12 +1876,17 @@ export function PocketParkingApp() {
                     }}
                 >
                     <div className="max-w-[80vw] truncate rounded-full bg-slate-950 px-4 py-2 text-xs font-black text-white shadow-lg">
-                        🎯 {target.name}
+                        🎯{" "}
+                        {
+                            translatedTargetName(
+                                target,
+                                language,
+                            )
+                        }
                     </div>
                 </div>
             )}
 
-            {/* 検索中 */}
             {parkingLoading && (
                 <div
                     className="absolute left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-lg"
@@ -1162,11 +1898,13 @@ export function PocketParkingApp() {
                             1150,
                     }}
                 >
-                    🔎 {t.loadingParking}
+                    🔎{" "}
+                    {
+                        t.loadingParking
+                    }
                 </div>
             )}
 
-            {/* エラー */}
             {parkingError && (
                 <div
                     className="absolute left-1/2 -translate-x-1/2 rounded-full bg-red-500 px-4 py-2 text-xs font-black text-white shadow-lg"
@@ -1178,11 +1916,12 @@ export function PocketParkingApp() {
                             1150,
                     }}
                 >
-                    {parkingError}
+                    {
+                        parkingError
+                    }
                 </div>
             )}
 
-            {/* 下カード */}
             {selected ? (
                 <ParkingDetail
                     spot={
@@ -1246,13 +1985,23 @@ function BottomList({
                         language,
                         onPick,
                     }: {
-    parkings: ParkingSpot[];
-    target: Target | null;
-    loading: boolean;
-    language: Language;
-    onPick: (
-        parking: ParkingSpot,
-    ) => void;
+    parkings:
+        ParkingSpot[];
+
+    target:
+        Target | null;
+
+    loading:
+        boolean;
+
+    language:
+        Language;
+
+    onPick:
+        (
+            parking:
+            ParkingSpot,
+        ) => void;
 }) {
     const t =
         TEXT[language];
@@ -1268,7 +2017,6 @@ function BottomList({
             <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-slate-300" />
 
             <div className="flex items-center justify-between px-5 pt-3">
-
                 <h2 className="text-sm font-black text-slate-900">
                     {target
                         ? `🅿️ ${t.nearbyParking}`
@@ -1277,10 +2025,14 @@ function BottomList({
 
                 {target && (
                     <span className="text-[10px] font-bold text-slate-400">
-                        {parkings.length}件
+                        {
+                            parkings.length
+                        }
+                        {
+                            t.count
+                        }
                     </span>
                 )}
-
             </div>
 
             {!target && (
@@ -1294,16 +2046,15 @@ function BottomList({
                 parkings.length ===
                 0 && (
                     <div className="px-5 py-6 text-center">
-
                         <p className="text-xs font-bold text-slate-500">
-                            {t.noParking}
+                            {
+                                t.noParking
+                            }
                         </p>
-
                     </div>
                 )}
 
             <div className="flex gap-3 overflow-x-auto px-5 pb-2 pt-3">
-
                 {parkings.map(
                     (
                         parking,
@@ -1346,7 +2097,6 @@ function BottomList({
                                     )}
 
                                 <div className="flex items-start gap-3">
-
                                     <div
                                         className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-xl font-black text-white ${
                                             index ===
@@ -1359,7 +2109,6 @@ function BottomList({
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-
                                         <p className="line-clamp-2 text-xs font-black text-slate-900">
                                             {
                                                 parking.name
@@ -1371,26 +2120,28 @@ function BottomList({
                                                 parking.price
                                             }
                                         </p>
-
                                     </div>
                                 </div>
 
                                 <div className="mt-3 flex flex-wrap gap-2">
-
                                     <span className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">
                                         🚶{" "}
                                         {walkMinutes(
                                             distance,
-                                        )}
-                                        分
+                                        )}{" "}
+                                        {
+                                            t.minute
+                                        }
                                     </span>
 
                                     <span className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">
                                         🚗{" "}
                                         {driveMinutes(
                                             distance,
-                                        )}
-                                        分
+                                        )}{" "}
+                                        {
+                                            t.minute
+                                        }
                                     </span>
 
                                     <span className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">
@@ -1399,11 +2150,9 @@ function BottomList({
                                         )}
                                         m
                                     </span>
-
                                 </div>
 
                                 <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2">
-
                                     <p className="text-[10px] font-bold text-slate-500">
                                         ⚪{" "}
                                         {
@@ -1414,13 +2163,11 @@ function BottomList({
                                             t.noLiveData
                                         }
                                     </p>
-
                                 </div>
                             </button>
                         );
                     },
                 )}
-
             </div>
         </div>
     );
@@ -1432,10 +2179,17 @@ function ParkingDetail({
                            language,
                            onClose,
                        }: {
-    spot: ParkingSpot;
-    target: Target | null;
-    language: Language;
-    onClose: () => void;
+    spot:
+        ParkingSpot;
+
+    target:
+        Target | null;
+
+    language:
+        Language;
+
+    onClose:
+        () => void;
 }) {
     const t =
         TEXT[language];
@@ -1449,7 +2203,10 @@ function ParkingDetail({
             : spot.distance;
 
     const navigationUrl =
-        `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`;
+        `https://www.google.com/maps/dir/?api=1` +
+        `&destination=${spot.lat},${spot.lng}` +
+        `&travelmode=driving` +
+        `&dir_action=navigate`;
 
     return (
         <div
@@ -1462,21 +2219,22 @@ function ParkingDetail({
             <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-slate-300" />
 
             <div className="flex items-start gap-3">
-
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-600 text-2xl font-black text-white">
                     P
                 </div>
 
                 <div className="min-w-0 flex-1">
-
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                        {t.parkingInfo}
+                        {
+                            t.parkingInfo
+                        }
                     </p>
 
                     <h3 className="mt-1 text-base font-black text-slate-900">
-                        {spot.name}
+                        {
+                            spot.name
+                        }
                     </h3>
-
                 </div>
 
                 <button
@@ -1488,18 +2246,16 @@ function ParkingDetail({
                 >
                     ×
                 </button>
-
             </div>
 
             <div className="mt-4 grid grid-cols-3 gap-2">
-
                 <Info
                     label={
                         t.walk
                     }
                     value={`${walkMinutes(
                         distance,
-                    )}分`}
+                    )} ${t.minute}`}
                 />
 
                 <Info
@@ -1508,59 +2264,117 @@ function ParkingDetail({
                     }
                     value={`${driveMinutes(
                         distance,
-                    )}分`}
+                    )} ${t.minute}`}
                 />
 
                 <Info
-                    label="DIST"
+                    label={
+                        t.distance
+                    }
                     value={`${Math.round(
                         distance,
                     )}m`}
                 />
-
             </div>
 
             <div className="mt-3 rounded-2xl bg-orange-50 px-4 py-3">
-
                 <p className="text-[10px] font-black text-orange-400">
                     PRICE
                 </p>
 
                 <p className="mt-1 text-sm font-black text-orange-600">
-                    {spot.price}
+                    {
+                        spot.price
+                    }
                 </p>
+            </div>
 
+            {spot.safetyScore !==
+                null &&
+                spot.safetyScore !==
+                undefined && (
+                    <div className="mt-3 rounded-2xl bg-emerald-50 px-4 py-3">
+                        <p className="text-[10px] font-black text-emerald-500">
+                            {
+                                t.safety
+                            }
+                        </p>
+
+                        <p className="mt-1 text-lg font-black text-emerald-700">
+                            {
+                                spot.safetyScore
+                            }
+                            /100
+                        </p>
+                    </div>
+                )}
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                    <p className="text-[10px] font-black text-slate-400">
+                        📷{" "}
+                        {
+                            t.camera
+                        }
+                    </p>
+
+                    <p className="mt-1 text-xs font-bold text-slate-700">
+                        {spot.securityCamera
+                            ? t.yes
+                            : t.no}
+                    </p>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                    <p className="text-[10px] font-black text-slate-400">
+                        💡{" "}
+                        {
+                            t.lighting
+                        }
+                    </p>
+
+                    <p className="mt-1 text-xs font-bold text-slate-700">
+                        {spot.streetLight
+                            ? t.yes
+                            : t.no}
+                    </p>
+                </div>
             </div>
 
             <div className="mt-3 rounded-2xl bg-slate-50 px-4 py-3">
-
                 <p className="text-[10px] font-black text-slate-400">
-                    {t.availability}
+                    {
+                        t.availability
+                    }
                 </p>
 
                 <p className="mt-1 text-xs font-bold text-slate-600">
-                    ⚪ {t.noLiveData}
+                    ⚪{" "}
+                    {
+                        t.noLiveData
+                    }
                 </p>
-
             </div>
 
             {spot.tags.length >
                 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
-
                         {spot.tags.map(
-                            (tag) => (
+                            (
+                                tag,
+                            ) => (
                                 <span
                                     key={
                                         tag
                                     }
                                     className="rounded-full bg-sky-50 px-3 py-1 text-[10px] font-bold text-slate-600"
                                 >
-                                {tag}
+                                {
+                                    tag
+                                }
                             </span>
                             ),
                         )}
-
                     </div>
                 )}
 
@@ -1572,7 +2386,10 @@ function ParkingDetail({
                 rel="noreferrer"
                 className="mt-4 flex items-center justify-center rounded-2xl bg-slate-950 py-3 text-sm font-black text-white shadow-lg"
             >
-                🚗 {t.route}
+                🚗{" "}
+                {
+                    t.route
+                }
             </a>
         </div>
     );
@@ -1582,20 +2399,25 @@ function Info({
                   label,
                   value,
               }: {
-    label: string;
-    value: string;
+    label:
+        string;
+
+    value:
+        string;
 }) {
     return (
         <div className="rounded-2xl bg-slate-100 px-2 py-3 text-center">
-
             <p className="text-[9px] font-bold text-slate-400">
-                {label}
+                {
+                    label
+                }
             </p>
 
             <p className="mt-1 text-xs font-black text-slate-900">
-                {value}
+                {
+                    value
+                }
             </p>
-
         </div>
     );
 }
