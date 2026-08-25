@@ -38,6 +38,15 @@ export type ParkingSpot = {
     parkingType?: string | null;
     note?: string | null;
     source?: string | null;
+
+    /*
+     * 駐車場の特徴
+     */
+    isPaid?: boolean;
+    isHidden?: boolean;
+    isIndoor?: boolean;
+    isFacility?: boolean;
+    isAccessible?: boolean;
 };
 
 type ParkingListProps = {
@@ -87,8 +96,7 @@ export function ParkingList({
 
             {target &&
                 !loading &&
-                parkings.length ===
-                0 && (
+                parkings.length === 0 && (
                     <p className="p-5 text-center text-xs">
                         {t.noParking}
                     </p>
@@ -120,20 +128,18 @@ export function ParkingList({
                                     )
                                 }
                                 className={`relative w-[240px] shrink-0 rounded-3xl bg-white p-3 text-left ${
-                                    index ===
-                                    0
+                                    index === 0
                                         ? "ring-2 ring-emerald-400"
                                         : "ring-1 ring-slate-200"
                                 }`}
                             >
-                                {index ===
-                                    0 && (
-                                        <span className="absolute -top-2 rounded-full bg-emerald-500 px-2 py-1 text-[9px] text-white">
+                                {index === 0 && (
+                                    <span className="absolute -top-2 rounded-full bg-emerald-500 px-2 py-1 text-[9px] text-white">
                                         {
                                             t.closest
                                         }
                                     </span>
-                                    )}
+                                )}
 
                                 <div className="flex gap-3">
                                     <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600 text-xl font-black text-white">
@@ -153,6 +159,59 @@ export function ParkingList({
                                             }
                                         </p>
                                     </div>
+                                </div>
+
+                                {/*
+                                 * ====================================
+                                 * 駐車場の特徴
+                                 * ====================================
+                                 */}
+
+                                <div className="mt-3 flex flex-wrap gap-1.5">
+                                    {parking.isPaid && (
+                                        <span className="rounded-full bg-amber-100 px-2 py-1 text-[9px] font-black text-amber-700">
+                                            💰{" "}
+                                            {
+                                                t.paidParking
+                                            }
+                                        </span>
+                                    )}
+
+                                    {parking.isHidden && (
+                                        <span className="rounded-full bg-violet-100 px-2 py-1 text-[9px] font-black text-violet-700">
+                                            👀{" "}
+                                            {
+                                                t.hiddenParking
+                                            }
+                                        </span>
+                                    )}
+
+                                    {parking.isIndoor && (
+                                        <span className="rounded-full bg-sky-100 px-2 py-1 text-[9px] font-black text-sky-700">
+                                            🏢{" "}
+                                            {
+                                                t.indoorParking
+                                            }
+                                        </span>
+                                    )}
+
+                                    {parking.isFacility && (
+                                        <span className="rounded-full bg-emerald-100 px-2 py-1 text-[9px] font-black text-emerald-700">
+                                            🏪{" "}
+                                            {
+                                                t.facilityParking
+                                            }
+                                        </span>
+                                    )}
+
+                                    {parking.isAccessible && (
+                                        <span className="rounded-full bg-blue-100 px-2 py-1 text-[9px] font-black text-blue-700">
+                                            ♿{" "}
+                                            {
+                                                t.accessibleParking
+                                            }
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="mt-3 flex gap-2">

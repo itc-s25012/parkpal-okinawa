@@ -470,5 +470,50 @@ export function convertOsmParking(
 
         source:
             "osm",
+
+        /*
+         * ========================================
+         * 駐車場の特徴
+         * ========================================
+         */
+
+        /*
+         * OSMの fee=yes なら有料
+         */
+        isPaid:
+            tags.fee ===
+            "yes",
+
+        /*
+         * 「穴場」はParkPal独自情報なので、
+         * OSMだけでは勝手に穴場判定しない
+         */
+        isHidden:
+            false,
+
+        /*
+         * 立体・地下なら屋内扱い
+         */
+        isIndoor:
+            parkingType ===
+            "multi-storey" ||
+            parkingType ===
+            "underground",
+
+        /*
+         * customers は
+         * お店・施設利用者向け駐車場
+         */
+        isFacility:
+            access ===
+            "customers",
+
+        /*
+         * wheelchair=yes なら
+         * バリアフリー対応
+         */
+        isAccessible:
+            tags.wheelchair ===
+            "yes",
     };
 }

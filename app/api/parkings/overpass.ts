@@ -15,13 +15,29 @@ const execFileAsync =
         execFile,
     );
 
+/*
+ * ============================================
+ * Overpassサーバー候補
+ * ============================================
+ */
+
 const OVERPASS_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
 ];
 
+/*
+ * 1サーバーあたり最大15秒
+ */
 const OVERPASS_TIMEOUT_SECONDS =
-    10;
+    15;
+
+/*
+ * ============================================
+ * 1サーバーへ問い合わせ
+ * ============================================
+ */
 
 async function fetchOverpass(
     url:
@@ -37,6 +53,11 @@ async function fetchOverpass(
             "curl",
             [
                 "-sS",
+
+                "--fail",
+
+                "--connect-timeout",
+                "5",
 
                 "--max-time",
                 String(
@@ -62,10 +83,24 @@ async function fetchOverpass(
             },
         );
 
+    if (
+        !stdout.trim()
+    ) {
+        throw new Error(
+            "Overpass returned empty response",
+        );
+    }
+
     return JSON.parse(
         stdout,
     ) as OverpassResponse;
 }
+
+/*
+ * ============================================
+ * Overpass Query
+ * ============================================
+ */
 
 export function buildOverpassQuery(
     lat:
@@ -78,7 +113,7 @@ export function buildOverpassQuery(
     number,
 ) {
     return `
-[out:json][timeout:8];
+[out:json][timeout:12];
 (
   node["amenity"="parking"](around:${radius},${lat},${lng});
   way["amenity"="parking"](around:${radius},${lat},${lng});
@@ -87,6 +122,12 @@ export function buildOverpassQuery(
 out center tags;
 `;
 }
+
+/*
+ * ============================================
+ * 複数サーバーを順番に試す
+ * ============================================
+ */
 
 export async function loadOverpassParkings(
     lat:
@@ -117,11 +158,19 @@ export async function loadOverpassParkings(
         of OVERPASS_URLS
         ) {
         try {
+            console.log(
+                `Trying Overpass: ${url}`,
+            );
+
             data =
                 await fetchOverpass(
                     url,
                     query,
                 );
+
+            console.log(
+                `Overpass success: ${url}`,
+            );
 
             break;
         } catch (

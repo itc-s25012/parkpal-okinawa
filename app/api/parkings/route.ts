@@ -23,6 +23,9 @@ import {
 import {
     loadSupabaseParkings,
     convertSupabaseParking,
+    getParkingSearchCache,
+    saveParkingSearchCache,
+    isParkingCacheFresh,
 } from "./supabase";
 
 import {
@@ -129,11 +132,60 @@ export async function GET(
 
     /*
      * ========================================
-     * Supabaseから取得
+     * 検索キャッシュ確認
      * ========================================
      *
-     * Overpassが失敗した場合でも
-     * Supabaseの駐車場は表示できる
+     * 過去1時間以内に同じ場所を検索して
+     * 実在駐車場を取得できていた場合、
+     * Overpassを呼ばずにその結果を使う。
+     * ========================================
+     */
+
+    const cache =
+        await getParkingSearchCache(
+            lat,
+            lng,
+            radius,
+        );
+
+    if (
+        cache &&
+        isParkingCacheFresh(
+            cache,
+            60,
+        )
+    ) {
+        console.log(
+            "Parking cache hit:",
+            lat,
+            lng,
+            radius,
+        );
+
+        return NextResponse.json(
+            {
+                parkings:
+                    cache.parkings.slice(
+                        0,
+                        40,
+                    ),
+
+                count:
+                cache.parkings.length,
+
+                language,
+
+                radius,
+
+                sourceMode:
+                    "cache",
+            },
+        );
+    }
+
+    /*
+     * ========================================
+     * Supabaseから取得
      * ========================================
      */
 
@@ -196,17 +248,68 @@ export async function GET(
 
     /*
      * ========================================
-     * Overpassが全部失敗した場合
-     * ========================================
-     *
-     * API自体をエラーにせず
-     * Supabaseの駐車場だけ返す
+     * Overpassが全部失敗
      * ========================================
      */
 
     if (
         !overpassData
     ) {
+        /*
+         * ====================================
+         * 古いキャッシュがある場合
+         * ====================================
+         *
+         * 1時間以上経過していても、
+         * Overpassが落ちているなら
+         * テストデータより古い実在データを優先。
+         * ====================================
+         */
+
+        if (
+            cache
+        ) {
+            console.warn(
+                "Overpass failed. Using stale parking cache.",
+            );
+
+            return NextResponse.json(
+                {
+                    parkings:
+                        cache.parkings.slice(
+                            0,
+                            40,
+                        ),
+
+                    count:
+                    cache.parkings.length,
+
+                    language,
+
+                    radius,
+
+                    sourceMode:
+                        "stale-cache",
+
+                    warning:
+                        "Using cached OpenStreetMap parking data.",
+
+                    detail:
+                    overpassError,
+                },
+            );
+        }
+
+        /*
+         * ====================================
+         * キャッシュも無い
+         * ====================================
+         *
+         * 最後の保険として
+         * parkingsテーブルのデータを使う。
+         * ====================================
+         */
+
         const fallback =
             sortParkingsByDistance(
                 removeDuplicateParkings(
@@ -302,10 +405,6 @@ export async function GET(
      * ========================================
      * OSM + Supabase
      * ========================================
-     *
-     * OSMの駐車場に
-     * Supabaseの安全情報などを追加する
-     * ========================================
      */
 
     const mergedOsm =
@@ -318,10 +417,6 @@ export async function GET(
                         parking.sourceId,
                     );
 
-                /*
-                 * Supabaseに追加情報が
-                 * なければOSMのまま
-                 */
                 if (
                     !extra
                 ) {
@@ -339,10 +434,6 @@ export async function GET(
     /*
      * ========================================
      * Supabase単独の駐車場
-     * ========================================
-     *
-     * OSMに紐づいていない
-     * Supabaseデータも表示する
      * ========================================
      */
 
@@ -398,6 +489,23 @@ export async function GET(
         sortParkingsByDistance(
             uniqueParkings,
         );
+
+    /*
+     * ========================================
+     * Overpass成功結果をキャッシュ
+     * ========================================
+     *
+     * 次回Overpassが落ちても
+     * この実在駐車場一覧を利用できる。
+     * ========================================
+     */
+
+    await saveParkingSearchCache(
+        lat,
+        lng,
+        radius,
+        sortedParkings,
+    );
 
     /*
      * ========================================

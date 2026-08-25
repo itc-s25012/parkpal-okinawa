@@ -34,6 +34,58 @@ type UseParkingsArgs = {
     mode: Mode;
 };
 
+/*
+ * ============================================
+ * 少し待つ
+ * ============================================
+ */
+
+function sleep(
+    milliseconds: number,
+    signal: AbortSignal,
+) {
+    return new Promise<void>(
+        (
+            resolve,
+            reject,
+        ) => {
+            const timer =
+                setTimeout(
+                    () => {
+                        signal.removeEventListener(
+                            "abort",
+                            onAbort,
+                        );
+
+                        resolve();
+                    },
+                    milliseconds,
+                );
+
+            function onAbort() {
+                clearTimeout(
+                    timer,
+                );
+
+                reject(
+                    new DOMException(
+                        "Aborted",
+                        "AbortError",
+                    ),
+                );
+            }
+
+            signal.addEventListener(
+                "abort",
+                onAbort,
+                {
+                    once: true,
+                },
+            );
+        },
+    );
+}
+
 export function useParkings({
                                 target,
                                 language,
@@ -51,41 +103,52 @@ export function useParkings({
         loading,
         setLoading,
     ] =
-        useState(false);
+        useState(
+            false,
+        );
 
     const [
         error,
         setError,
     ] =
-        useState("");
+        useState(
+            "",
+        );
 
     const t =
-        TEXT[language];
+        TEXT[
+            language
+            ];
 
     useEffect(
         () => {
             /*
-             * 目的地が無ければ
-             * APIを呼ばず終了。
-             *
-             * parkingsの初期化は
-             * PocketParkingApp側で行う。
+             * ========================================
+             * 目的地なし
+             * ========================================
              */
-            if (!target) {
+
+            if (
+                !target
+            ) {
                 return;
             }
 
             /*
-             * targetをここで固定しておく。
-             *
-             * async関数の中でも
-             * nullではないとTypeScriptが分かる。
+             * async処理の途中でtargetが変わっても
+             * 今回検索する場所を固定しておく
              */
             const currentTarget =
                 target;
 
             const controller =
                 new AbortController();
+
+            /*
+             * ========================================
+             * 駐車場取得
+             * ========================================
+             */
 
             async function loadParkings() {
                 setLoading(
@@ -96,76 +159,192 @@ export function useParkings({
                     "",
                 );
 
+                /*
+                 * 観光モード 3km
+                 * 学生モード 1.5km
+                 */
+                const radius =
+                    mode ===
+                    "tourist"
+                        ? "3000"
+                        : "1500";
+
+                const params =
+                    new URLSearchParams(
+                        {
+                            lat:
+                                String(
+                                    currentTarget.lat,
+                                ),
+
+                            lng:
+                                String(
+                                    currentTarget.lng,
+                                ),
+
+                            radius,
+
+                            lang:
+                            language,
+                        },
+                    );
+
+                /*
+                 * ====================================
+                 * 最大3回まで試す
+                 * ====================================
+                 */
+
+                const maxAttempts =
+                    3;
+
                 try {
-                    /*
-                     * 観光モードは3km
-                     * 学生モードは1.5km
-                     */
-                    const radius =
-                        mode ===
-                        "tourist"
-                            ? "3000"
-                            : "1500";
-
-                    const params =
-                        new URLSearchParams(
-                            {
-                                lat:
-                                    String(
-                                        currentTarget.lat,
-                                    ),
-
-                                lng:
-                                    String(
-                                        currentTarget.lng,
-                                    ),
-
-                                radius,
-
-                                lang:
-                                language,
-                            },
-                        );
-
-                    const response =
-                        await fetch(
-                            `/api/parkings?${params.toString()}`,
-                            {
-                                signal:
-                                controller.signal,
-                            },
-                        );
-
-                    const text =
-                        await response.text();
-
-                    if (
-                        !response.ok
+                    for (
+                        let attempt = 1;
+                        attempt <= maxAttempts;
+                        attempt++
                     ) {
-                        throw new Error(
-                            text,
+                        console.log(
+                            `Parking request attempt ${attempt}/${maxAttempts}`,
+                            currentTarget.name,
                         );
+
+                        const response =
+                            await fetch(
+                                `/api/parkings?${params.toString()}`,
+                                {
+                                    signal:
+                                    controller.signal,
+
+                                    /*
+                                     * 開発中に古いAPI結果を
+                                     * キャッシュから取らないようにする
+                                     */
+                                    cache:
+                                        "no-store",
+                                },
+                            );
+
+                        const text =
+                            await response.text();
+
+                        if (
+                            !response.ok
+                        ) {
+                            throw new Error(
+                                text,
+                            );
+                        }
+
+                        const data =
+                            JSON.parse(
+                                text,
+                            ) as ParkingResponse;
+
+                        /*
+                         * =================================
+                         * OSM取得成功
+                         * =================================
+                         */
+
+                        if (
+                            data.sourceMode ===
+                            "osm+supabase"
+                        ) {
+                            setParkings(
+                                data.parkings ??
+                                [],
+                            );
+
+                            setError(
+                                "",
+                            );
+
+                            return;
+                        }
+
+                        /*
+                         * =================================
+                         * Supabase fallback
+                         *
+                         * Overpassが一時的に失敗した状態。
+                         * 最終回でなければ少し待って再取得。
+                         * =================================
+                         */
+
+                        if (
+                            data.sourceMode ===
+                            "supabase-fallback"
+                        ) {
+                            console.warn(
+                                `Supabase fallback received (${attempt}/${maxAttempts})`,
+                                data.detail ??
+                                data.warning ??
+                                "",
+                            );
+
+                            /*
+                             * まだ再試行できる
+                             */
+                            if (
+                                attempt <
+                                maxAttempts
+                            ) {
+                                /*
+                                 * テスト駐車場を一瞬表示せず、
+                                 * loadingのまま次を試す
+                                 */
+                                await sleep(
+                                    1000,
+                                    controller.signal,
+                                );
+
+                                continue;
+                            }
+
+                            /*
+                             * 3回全部Overpass失敗。
+                             *
+                             * この場合だけSupabaseの結果を
+                             * 最終結果として表示する。
+                             */
+                            setParkings(
+                                data.parkings ??
+                                [],
+                            );
+
+                            setError(
+                                "",
+                            );
+
+                            return;
+                        }
+
+                        /*
+                         * =================================
+                         * sourceModeが無い場合
+                         *
+                         * 通常レスポンスとして扱う
+                         * =================================
+                         */
+
+                        setParkings(
+                            data.parkings ??
+                            [],
+                        );
+
+                        setError(
+                            "",
+                        );
+
+                        return;
                     }
-
-                    const data =
-                        JSON.parse(
-                            text,
-                        ) as ParkingResponse;
-
-                    setParkings(
-                        data.parkings ??
-                        [],
-                    );
-
-                    setError(
-                        "",
-                    );
                 } catch (
                     err
                     ) {
                     /*
-                     * 次の検索に切り替わった時の
-                     * Abortはエラー扱いしない
+                     * 新しい検索に切り替わった場合などは
+                     * エラー表示しない
                      */
                     if (
                         err instanceof
@@ -189,18 +368,28 @@ export function useParkings({
                         t.error,
                     );
                 } finally {
-                    setLoading(
-                        false,
-                    );
+                    /*
+                     * 古い検索がabortされた後に
+                     * loadingを変更するのを防ぐ
+                     */
+                    if (
+                        !controller.signal.aborted
+                    ) {
+                        setLoading(
+                            false,
+                        );
+                    }
                 }
             }
 
             void loadParkings();
 
             /*
-             * 目的地・言語・モードなどが
-             * 途中で変わったら古い通信を中止
+             * ========================================
+             * 検索条件が変わったら古い通信を中止
+             * ========================================
              */
+
             return () => {
                 controller.abort();
             };

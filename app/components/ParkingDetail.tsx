@@ -111,6 +111,65 @@ export function ParkingDetail({
                 </p>
             </div>
 
+            {/*
+             * ====================================
+             * 駐車場の特徴
+             * ====================================
+             */}
+
+            {(spot.isPaid ||
+                spot.isHidden ||
+                spot.isIndoor ||
+                spot.isFacility ||
+                spot.isAccessible) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                    {spot.isPaid && (
+                        <span className="rounded-full bg-amber-100 px-3 py-1.5 text-[10px] font-black text-amber-700">
+                            💰{" "}
+                            {
+                                t.paidParking
+                            }
+                        </span>
+                    )}
+
+                    {spot.isHidden && (
+                        <span className="rounded-full bg-violet-100 px-3 py-1.5 text-[10px] font-black text-violet-700">
+                            👀{" "}
+                            {
+                                t.hiddenParking
+                            }
+                        </span>
+                    )}
+
+                    {spot.isIndoor && (
+                        <span className="rounded-full bg-sky-100 px-3 py-1.5 text-[10px] font-black text-sky-700">
+                            🏢{" "}
+                            {
+                                t.indoorParking
+                            }
+                        </span>
+                    )}
+
+                    {spot.isFacility && (
+                        <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-[10px] font-black text-emerald-700">
+                            🏪{" "}
+                            {
+                                t.facilityParking
+                            }
+                        </span>
+                    )}
+
+                    {spot.isAccessible && (
+                        <span className="rounded-full bg-blue-100 px-3 py-1.5 text-[10px] font-black text-blue-700">
+                            ♿{" "}
+                            {
+                                t.accessibleParking
+                            }
+                        </span>
+                    )}
+                </div>
+            )}
+
             {spot.safetyScore !==
                 null &&
                 spot.safetyScore !==
@@ -121,7 +180,9 @@ export function ParkingDetail({
                         </p>
 
                         <p className="text-lg font-black">
-                            {spot.safetyScore}
+                            {
+                                spot.safetyScore
+                            }
                             /100
                         </p>
                     </div>
@@ -149,24 +210,31 @@ export function ParkingDetail({
                 </div>
             </div>
 
-            {spot.tags.length >
-                0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                        {spot.tags.map(
-                            (tag) => (
-                                <span
-                                    key={tag}
-                                    className="rounded-full bg-sky-50 px-3 py-1 text-[10px]"
-                                >
-                                {tag}
+            {spot.tags.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                    {spot.tags.map(
+                        (
+                            tag,
+                        ) => (
+                            <span
+                                key={
+                                    tag
+                                }
+                                className="rounded-full bg-sky-50 px-3 py-1 text-[10px]"
+                            >
+                                {
+                                    tag
+                                }
                             </span>
-                            ),
-                        )}
-                    </div>
-                )}
+                        ),
+                    )}
+                </div>
+            )}
 
             <a
-                href={navigationUrl}
+                href={
+                    navigationUrl
+                }
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 flex justify-center rounded-2xl bg-slate-950 py-3 text-sm font-black text-white"

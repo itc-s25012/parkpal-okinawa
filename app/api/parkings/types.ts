@@ -58,6 +58,12 @@ export type SupabaseParking = {
 
     source: string | null;
     source_id: string | null;
+
+    is_paid: boolean | null;
+    is_hidden: boolean | null;
+    is_indoor: boolean | null;
+    is_facility: boolean | null;
+    is_accessible: boolean | null;
 };
 
 export type ApiParking = {
@@ -97,4 +103,16 @@ export type ApiParking = {
     note: string | null;
 
     source: string | null;
+
+    /*
+ * ========================================
+ * 駐車場の特徴
+ * ========================================
+ */
+
+    isPaid: boolean;
+    isHidden: boolean;
+    isIndoor: boolean;
+    isFacility: boolean;
+    isAccessible: boolean;
 };

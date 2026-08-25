@@ -15,6 +15,12 @@ export const LANGUAGE_LABELS:
 };
 
 export const TEXT = {
+    /*
+     * ========================================
+     * 日本語
+     * ========================================
+     */
+
     ja: {
         student: "学生",
         tourist: "観光",
@@ -39,8 +45,24 @@ export const TEXT = {
         lighting: "街灯",
         yes: "あり",
         no: "情報なし",
+
+        /*
+         * 駐車場の特徴
+         */
+        paidParking: "有料",
+        hiddenParking: "穴場",
+        indoorParking: "屋内",
+        facilityParking: "施設併設",
+        accessibleParking: "バリアフリー",
+
         error: "駐車場情報を取得できませんでした",
     },
+
+    /*
+     * ========================================
+     * 英語
+     * ========================================
+     */
 
     en: {
         student: "Student",
@@ -66,8 +88,24 @@ export const TEXT = {
         lighting: "Lighting",
         yes: "Available",
         no: "No data",
+
+        /*
+         * Parking features
+         */
+        paidParking: "Paid",
+        hiddenParking: "Hidden gem",
+        indoorParking: "Indoor",
+        facilityParking: "Facility parking",
+        accessibleParking: "Accessible",
+
         error: "Could not load parking information",
     },
+
+    /*
+     * ========================================
+     * 中国語（簡体字）
+     * ========================================
+     */
 
     "zh-CN": {
         student: "学生",
@@ -93,8 +131,24 @@ export const TEXT = {
         lighting: "照明",
         yes: "有",
         no: "暂无信息",
+
+        /*
+         * 停车场特点
+         */
+        paidParking: "收费",
+        hiddenParking: "隐藏好去处",
+        indoorParking: "室内",
+        facilityParking: "设施附属",
+        accessibleParking: "无障碍",
+
         error: "无法获取停车场信息",
     },
+
+    /*
+     * ========================================
+     * 中国語（繁体字）
+     * ========================================
+     */
 
     "zh-TW": {
         student: "學生",
@@ -120,8 +174,24 @@ export const TEXT = {
         lighting: "照明",
         yes: "有",
         no: "暫無資訊",
+
+        /*
+         * 停車場特色
+         */
+        paidParking: "收費",
+        hiddenParking: "私房好去處",
+        indoorParking: "室內",
+        facilityParking: "設施附設",
+        accessibleParking: "無障礙",
+
         error: "無法取得停車場資訊",
     },
+
+    /*
+     * ========================================
+     * 韓国語
+     * ========================================
+     */
 
     ko: {
         student: "학생",
@@ -147,6 +217,16 @@ export const TEXT = {
         lighting: "조명",
         yes: "있음",
         no: "정보 없음",
+
+        /*
+         * 주차장 특징
+         */
+        paidParking: "유료",
+        hiddenParking: "숨은 명소",
+        indoorParking: "실내",
+        facilityParking: "시설 부설",
+        accessibleParking: "배리어프리",
+
         error: "주차장 정보를 가져오지 못했습니다",
     },
 } satisfies Record<

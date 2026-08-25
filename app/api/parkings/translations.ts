@@ -2,16 +2,52 @@ import type {
     Language,
 } from "./types";
 
+/*
+ * ============================================
+ * 言語コードをParkPal用に変換
+ * ============================================
+ */
+
+export function normalizeLanguage(
+    value: string | null,
+): Language {
+    if (
+        value === "en" ||
+        value === "zh-CN" ||
+        value === "zh-TW" ||
+        value === "ko"
+    ) {
+        return value;
+    }
+
+    return "ja";
+}
+
+/*
+ * ============================================
+ * 言語ラベル
+ * ============================================
+ */
+
+export const LANGUAGE_LABELS:
+    Record<Language, string> = {
+    ja: "🇯🇵 日本語",
+    en: "🇺🇸 English",
+    "zh-CN": "🇨🇳 简体中文",
+    "zh-TW": "🇹🇼 繁體中文",
+    ko: "🇰🇷 한국어",
+};
+
+/*
+ * ============================================
+ * API用 翻訳
+ * ============================================
+ */
+
 export const TEXT = {
     ja: {
         parking:
             "駐車場",
-
-        operator:
-            "運営",
-
-        spaces:
-            "台",
 
         free:
             "無料",
@@ -20,13 +56,34 @@ export const TEXT = {
             "有料",
 
         paidUnknown:
-            "有料・料金未登録",
+            "有料・料金要確認",
 
         priceUnknown:
-            "料金情報なし",
+            "料金要確認",
+
+        camera:
+            "防犯カメラ",
+
+        light:
+            "街灯あり",
+
+        staff:
+            "管理スタッフ",
+
+        student:
+            "学生向け",
+
+        registered:
+            "駐車場",
+
+        operator:
+            "運営",
+
+        spaces:
+            "台",
 
         customers:
-            "施設利用者向け",
+            "利用者専用",
 
         surface:
             "平面駐車場",
@@ -39,32 +96,11 @@ export const TEXT = {
 
         rooftop:
             "屋上駐車場",
-
-        registered:
-            "OpenStreetMap登録駐車場",
-
-        camera:
-            "📷 防犯カメラあり",
-
-        light:
-            "💡 街灯あり",
-
-        staff:
-            "🛡️ 管理スタッフあり",
-
-        student:
-            "🎓 学生向け",
     },
 
     en: {
         parking:
             "Parking",
-
-        operator:
-            "Operator",
-
-        spaces:
-            " spaces",
 
         free:
             "Free",
@@ -73,10 +109,31 @@ export const TEXT = {
             "Paid",
 
         paidUnknown:
-            "Paid · Price unavailable",
+            "Paid · Price unknown",
 
         priceUnknown:
-            "Price unavailable",
+            "Price unknown",
+
+        camera:
+            "Security camera",
+
+        light:
+            "Lighting",
+
+        staff:
+            "Security staff",
+
+        student:
+            "Student friendly",
+
+        registered:
+            "Parking",
+
+        operator:
+            "Operator",
+
+        spaces:
+            " spaces",
 
         customers:
             "Customers only",
@@ -92,32 +149,11 @@ export const TEXT = {
 
         rooftop:
             "Rooftop parking",
-
-        registered:
-            "OpenStreetMap parking",
-
-        camera:
-            "📷 Security camera",
-
-        light:
-            "💡 Lighting available",
-
-        staff:
-            "🛡️ Staff on site",
-
-        student:
-            "🎓 Student friendly",
     },
 
     "zh-CN": {
         parking:
             "停车场",
-
-        operator:
-            "运营",
-
-        spaces:
-            "个车位",
 
         free:
             "免费",
@@ -126,13 +162,34 @@ export const TEXT = {
             "收费",
 
         paidUnknown:
-            "收费 · 暂无价格信息",
+            "收费・价格待确认",
 
         priceUnknown:
-            "暂无价格信息",
+            "价格待确认",
+
+        camera:
+            "监控摄像头",
+
+        light:
+            "有照明",
+
+        staff:
+            "有管理人员",
+
+        student:
+            "适合学生",
+
+        registered:
+            "停车场",
+
+        operator:
+            "运营方",
+
+        spaces:
+            "个车位",
 
         customers:
-            "仅限设施用户",
+            "仅限顾客",
 
         surface:
             "地面停车场",
@@ -145,32 +202,11 @@ export const TEXT = {
 
         rooftop:
             "屋顶停车场",
-
-        registered:
-            "OpenStreetMap登记停车场",
-
-        camera:
-            "📷 有监控摄像头",
-
-        light:
-            "💡 有照明",
-
-        staff:
-            "🛡️ 有管理人员",
-
-        student:
-            "🎓 学生友好",
     },
 
     "zh-TW": {
         parking:
             "停車場",
-
-        operator:
-            "營運",
-
-        spaces:
-            "個車位",
 
         free:
             "免費",
@@ -179,13 +215,34 @@ export const TEXT = {
             "收費",
 
         paidUnknown:
-            "收費 · 暫無價格資訊",
+            "收費・價格待確認",
 
         priceUnknown:
-            "暫無價格資訊",
+            "價格待確認",
+
+        camera:
+            "監視器",
+
+        light:
+            "有照明",
+
+        staff:
+            "有管理人員",
+
+        student:
+            "適合學生",
+
+        registered:
+            "停車場",
+
+        operator:
+            "營運方",
+
+        spaces:
+            "個車位",
 
         customers:
-            "僅限設施使用者",
+            "僅限顧客",
 
         surface:
             "平面停車場",
@@ -198,32 +255,11 @@ export const TEXT = {
 
         rooftop:
             "屋頂停車場",
-
-        registered:
-            "OpenStreetMap登記停車場",
-
-        camera:
-            "📷 有監視器",
-
-        light:
-            "💡 有照明",
-
-        staff:
-            "🛡️ 有管理人員",
-
-        student:
-            "🎓 學生友善",
     },
 
     ko: {
         parking:
             "주차장",
-
-        operator:
-            "운영",
-
-        spaces:
-            "대",
 
         free:
             "무료",
@@ -232,16 +268,37 @@ export const TEXT = {
             "유료",
 
         paidUnknown:
-            "유료 · 요금 정보 없음",
+            "유료 · 요금 확인 필요",
 
         priceUnknown:
-            "요금 정보 없음",
+            "요금 확인 필요",
+
+        camera:
+            "방범 카메라",
+
+        light:
+            "조명 있음",
+
+        staff:
+            "관리 직원",
+
+        student:
+            "학생 추천",
+
+        registered:
+            "주차장",
+
+        operator:
+            "운영",
+
+        spaces:
+            "대",
 
         customers:
-            "시설 이용자 전용",
+            "이용객 전용",
 
         surface:
-            "평면 주차장",
+            "노상 외 평면 주차장",
 
         multiStorey:
             "입체 주차장",
@@ -251,42 +308,8 @@ export const TEXT = {
 
         rooftop:
             "옥상 주차장",
-
-        registered:
-            "OpenStreetMap 등록 주차장",
-
-        camera:
-            "📷 방범 카메라 있음",
-
-        light:
-            "💡 조명 있음",
-
-        staff:
-            "🛡️ 관리 직원 있음",
-
-        student:
-            "🎓 학생 친화",
     },
 } satisfies Record<
     Language,
-    Record<
-        string,
-        string
-    >
+    Record<string, string>
 >;
-
-export function normalizeLanguage(
-    value:
-        string | null,
-): Language {
-    if (
-        value === "en" ||
-        value === "zh-CN" ||
-        value === "zh-TW" ||
-        value === "ko"
-    ) {
-        return value;
-    }
-
-    return "ja";
-}

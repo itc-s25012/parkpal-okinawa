@@ -1,21 +1,11 @@
 "use client";
 
 import {
-    useState,
-} from "react";
-
-import {
-    TEXT,
-    type Language,
-} from "@/lib/translations";
-
-import {
     MapView,
 } from "@/app/components/MapView";
 
 import {
     ParkingList,
-    type ParkingSpot,
 } from "@/app/components/ParkingList";
 
 import {
@@ -24,7 +14,6 @@ import {
 
 import {
     SearchPanel,
-    type Chip,
 } from "@/app/components/SearchPanel";
 
 import {
@@ -36,220 +25,53 @@ import {
 } from "@/app/components/StatusOverlay";
 
 import {
-    useParkings,
-} from "@/app/hooks/useParkings";
-
-import {
-    useSearch,
-    type Mode,
-} from "@/app/hooks/useSearch";
+    useParkingAppState,
+} from "@/app/hooks/useParkingAppState";
 
 /*
  * ============================================
- * メイン
+ * ParkPal メイン画面
  * ============================================
  */
 
 export function PocketParkingApp() {
     /*
      * ========================================
-     * 言語
+     * アプリ全体の状態
      * ========================================
      */
 
-    const [
-        language,
-        setLanguage,
-    ] =
-        useState<Language>(
-            "ja",
-        );
-
-    const [
-        languageOpen,
-        setLanguageOpen,
-    ] =
-        useState(
-            false,
-        );
-
-    /*
-     * ========================================
-     * 選択中の駐車場
-     * ========================================
-     */
-
-    const [
-        selected,
-        setSelected,
-    ] =
-        useState<
-            ParkingSpot | null
-        >(
-            null,
-        );
-
-    /*
-     * ========================================
-     * 検索処理
-     * ========================================
-     */
-
-    const search =
-        useSearch();
-
-    /*
-     * 分かりやすいように取り出す
-     */
     const {
         mode,
+
+        language,
+        languageOpen,
+        setLanguageOpen,
+        changeLanguage,
+
         query,
         focused,
         target,
-
         chips,
         suggestions,
-    } =
-        search;
 
-    /*
-     * ========================================
-     * 翻訳
-     * ========================================
-     */
+        changeQuery,
+        focusSearch,
+        selectLandmark,
+        clearSearch,
+        switchMode,
+        handleChip,
 
-    const t =
-        TEXT[
-            language
-            ];
-
-    /*
-     * ========================================
-     * 駐車場取得
-     * ========================================
-     */
-
-    const {
         parkings,
+        parkingLoading,
+        parkingError,
 
-        loading:
-            parkingLoading,
+        selected,
+        setSelected,
 
-        error:
-            parkingError,
-
-        setParkings,
+        t,
     } =
-        useParkings({
-            target,
-            language,
-            mode,
-        });
-
-    /*
-     * ========================================
-     * 目的地を選ぶ
-     * ========================================
-     */
-
-    function selectLandmark(
-        landmark:
-        Parameters<
-            typeof search.selectLandmark
-        >[0],
-    ) {
-        /*
-         * 古い駐車場を消す
-         */
-        setParkings(
-            [],
-        );
-
-        /*
-         * 古い詳細も閉じる
-         */
-        setSelected(
-            null,
-        );
-
-        /*
-         * 検索Hookに目的地変更を任せる
-         */
-        search.selectLandmark(
-            landmark,
-        );
-    }
-
-    /*
-     * ========================================
-     * 検索クリア
-     * ========================================
-     */
-
-    function clearSearch() {
-        setParkings(
-            [],
-        );
-
-        setSelected(
-            null,
-        );
-
-        search.clearSearch();
-    }
-
-    /*
-     * ========================================
-     * Student / Travel 切り替え
-     * ========================================
-     */
-
-    function switchMode(
-        nextMode:
-        Mode,
-    ) {
-        setParkings(
-            [],
-        );
-
-        setSelected(
-            null,
-        );
-
-        setLanguageOpen(
-            false,
-        );
-
-        search.switchMode(
-            nextMode,
-        );
-    }
-
-    /*
-     * ========================================
-     * チップ選択
-     * ========================================
-     */
-
-    function handleChip(
-        chip:
-        Chip,
-    ) {
-        /*
-         * 前の駐車場を一旦消す
-         */
-        setParkings(
-            [],
-        );
-
-        setSelected(
-            null,
-        );
-
-        search.handleChip(
-            chip,
-        );
-    }
+        useParkingAppState();
 
     /*
      * ========================================
@@ -294,7 +116,7 @@ export function PocketParkingApp() {
 
             {/*
              * ====================================
-             * 上部UI
+             * 上部メニュー
              * ====================================
              */}
 
@@ -315,7 +137,7 @@ export function PocketParkingApp() {
                     setLanguageOpen
                 }
                 onLanguageChange={
-                    setLanguage
+                    changeLanguage
                 }
             />
 
@@ -351,10 +173,10 @@ export function PocketParkingApp() {
                     t.searchTourist
                 }
                 onQueryChange={
-                    search.changeQuery
+                    changeQuery
                 }
                 onFocus={
-                    search.focusSearch
+                    focusSearch
                 }
                 onClear={
                     clearSearch
@@ -390,7 +212,7 @@ export function PocketParkingApp() {
 
             {/*
              * ====================================
-             * 駐車場詳細 / 一覧
+             * 駐車場詳細 / 駐車場一覧
              * ====================================
              */}
 
