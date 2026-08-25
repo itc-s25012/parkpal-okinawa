@@ -45,8 +45,8 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
             "oohara",
         ],
 
-        lat: 26.212,
-        lng: 127.6785,
+        lat: 26.208896,
+        lng: 127.676980,
 
         category: "vocational",
 
@@ -67,8 +67,8 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
             "KBCビジネス＆IT",
         ],
 
-        lat: 26.2045,
-        lng: 127.683,
+        lat: 26.205716,
+        lng: 127.680443,
 
         category: "vocational",
 
@@ -90,8 +90,8 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
             "KBCビューティーモード専門学校",
         ],
 
-        lat: 26.2122,
-        lng: 127.674,
+        lat: 26.212829,
+        lng: 127.673185,
 
         category: "vocational",
 
@@ -99,6 +99,7 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
 
         address: "沖縄県那覇市東町23-5",
     },
+
     {
         id: "vs5",
 
@@ -112,6 +113,7 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
             "KBCリゾート・エアライン＆ブライダル専門学校",
         ],
 
+        // 座標はまだ元データを維持
         lat: 26.195,
         lng: 127.662,
 
@@ -135,8 +137,8 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
             "KBCペットワールド専門学校",
         ],
 
-        lat: 26.2125,
-        lng: 127.6745,
+        lat: 26.211965,
+        lng: 127.673099,
 
         category: "vocational",
 
@@ -283,6 +285,7 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
         address: "沖縄県那覇市泊2丁目17-4",
     },
 
+
     {
         id: "vs13",
 
@@ -319,8 +322,8 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
             "Gaigo",
         ],
 
-        lat: 26.215,
-        lng: 127.6815,
+        lat: 26.213862,
+        lng: 127.678057,
 
         category: "vocational",
 
@@ -342,8 +345,8 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
             "daiiku",
         ],
 
-        lat: 26.219,
-        lng: 127.697,
+        lat: 26.22132,
+        lng: 127.6989,
 
         category: "vocational",
 
@@ -491,8 +494,8 @@ export const SOUTH_VOCATIONAL_SCHOOLS:
             "那覇日経ビジネス",
         ],
 
-        lat: 26.218,
-        lng: 127.694,
+        lat: 26.2184938,
+        lng: 127.6929908,
 
         category: "vocational",
 
