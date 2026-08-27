@@ -23,14 +23,40 @@ import type {
 
 import {
     useSearch,
-    type Mode,
 } from "@/app/hooks/useSearch";
 
 import {
     useParkings,
 } from "@/app/hooks/useParkings";
 
+/*
+ * ========================================
+ * モード
+ * ========================================
+ *
+ * student = 学生向け
+ * tourist = 観光客向け
+ */
+
+type AppMode =
+    | "student"
+    | "tourist";
+
 export function useParkingAppState() {
+    /*
+     * ========================================
+     * モード
+     * ========================================
+     */
+
+    const [
+        mode,
+        setMode,
+    ] =
+        useState<AppMode>(
+            "student",
+        );
+
     /*
      * ========================================
      * 言語
@@ -79,7 +105,6 @@ export function useParkingAppState() {
         useSearch();
 
     const {
-        mode,
         query,
         focused,
         target,
@@ -119,8 +144,40 @@ export function useParkingAppState() {
         useParkings({
             target,
             language,
-            mode,
         });
+
+    /*
+     * ========================================
+     * モード変更
+     * ========================================
+     */
+
+    function switchMode(
+        nextMode:
+        AppMode,
+    ) {
+        /*
+         * モードを変更
+         */
+        setMode(
+            nextMode,
+        );
+
+        /*
+         * モードを変えたら
+         * 前の駐車場一覧を消す
+         */
+        setParkings(
+            [],
+        );
+
+        /*
+         * 開いている詳細画面も閉じる
+         */
+        setSelected(
+            null,
+        );
+    }
 
     /*
      * ========================================
@@ -171,33 +228,6 @@ export function useParkingAppState() {
         );
 
         search.clearSearch();
-    }
-
-    /*
-     * ========================================
-     * Student / Travel 切り替え
-     * ========================================
-     */
-
-    function switchMode(
-        nextMode:
-        Mode,
-    ) {
-        setParkings(
-            [],
-        );
-
-        setSelected(
-            null,
-        );
-
-        setLanguageOpen(
-            false,
-        );
-
-        search.switchMode(
-            nextMode,
-        );
     }
 
     /*
@@ -253,6 +283,7 @@ export function useParkingAppState() {
          * mode
          */
         mode,
+        switchMode,
 
         /*
          * language
@@ -279,7 +310,6 @@ export function useParkingAppState() {
 
         selectLandmark,
         clearSearch,
-        switchMode,
         handleChip,
 
         /*

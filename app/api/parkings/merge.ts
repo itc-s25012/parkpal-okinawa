@@ -30,6 +30,12 @@ export function mergeParking(
         ...osm.tags,
     ];
 
+    /*
+     * ========================================
+     * タグ追加
+     * ========================================
+     */
+
     if (
         extra.security_camera &&
         !extraTags.includes(
@@ -74,20 +80,73 @@ export function mergeParking(
         );
     }
 
+    /*
+     * ========================================
+     * 月極
+     * ========================================
+     */
+
+    const rentalType =
+        extra.rental_type ??
+        osm.rentalType ??
+        "hourly";
+
+    const monthlyPrice =
+        extra.monthly_price ??
+        osm.monthlyPrice ??
+        null;
+
+    if (
+        rentalType ===
+        "monthly" &&
+        !extraTags.includes(
+            "月極",
+        )
+    ) {
+        extraTags.push(
+            "月極",
+        );
+    }
+
+    /*
+     * ========================================
+     * 料金
+     * ========================================
+     */
+
+    let price =
+        osm.price;
+
+    if (
+        rentalType ===
+        "monthly" &&
+        monthlyPrice !==
+        null
+    ) {
+        price =
+            `月額 ${monthlyPrice.toLocaleString(
+                "ja-JP",
+            )}円`;
+    } else if (
+        language ===
+        "ja" &&
+        extra.price_text
+    ) {
+        price =
+            extra.price_text;
+    }
+
     return {
         ...osm,
 
         name:
-            language === "ja" &&
+            language ===
+            "ja" &&
             extra.name
                 ? extra.name
                 : osm.name,
 
-        price:
-            language === "ja" &&
-            extra.price_text
-                ? extra.price_text
-                : osm.price,
+        price,
 
         tags:
         extraTags,
@@ -134,6 +193,42 @@ export function mergeParking(
         source:
             extra.source ??
             osm.source,
+
+        /*
+         * ====================================
+         * 駐車場の特徴
+         * ====================================
+         */
+
+        isPaid:
+            extra.is_paid ??
+            osm.isPaid,
+
+        isHidden:
+            extra.is_hidden ??
+            osm.isHidden,
+
+        isIndoor:
+            extra.is_indoor ??
+            osm.isIndoor,
+
+        isFacility:
+            extra.is_facility ??
+            osm.isFacility,
+
+        isAccessible:
+            extra.is_accessible ??
+            osm.isAccessible,
+
+        /*
+         * ====================================
+         * 月極
+         * ====================================
+         */
+
+        rentalType,
+
+        monthlyPrice,
     };
 }
 
@@ -193,6 +288,7 @@ export function removeDuplicateParkings(
                     /*
                      * sourceIdが同じ
                      */
+
                     if (
                         existing.sourceId ===
                         parking.sourceId
@@ -203,6 +299,7 @@ export function removeDuplicateParkings(
                     /*
                      * 名前を比較
                      */
+
                     const sameName =
                         normalizeParkingName(
                             existing.name,
@@ -219,8 +316,9 @@ export function removeDuplicateParkings(
 
                     /*
                      * 同名で25m以内なら
-                     * 同じ駐車場とみなす
+                     * 同じ駐車場
                      */
+
                     const distance =
                         distanceMeters(
                             {
@@ -261,7 +359,85 @@ export function removeDuplicateParkings(
 
 /*
  * ============================================
- * 距離順に並べる
+ * 駐車場の優先順位
+ * ============================================
+ *
+ * 0 = 学生向け・学校向け
+ * 1 = 月極
+ * 2 = 一般の時間貸し
+ * 3 = 店舗・施設利用者向け
+ *
+ * 数字が小さいほど
+ * おすすめ上位に表示する
+ * ============================================
+ */
+
+function parkingPriority(
+    parking:
+    ApiParking,
+) {
+    /*
+     * ========================================
+     * 0
+     * 学生向け・学校向け
+     * ========================================
+     */
+
+    if (
+        parking.studentFriendly
+    ) {
+        return 0;
+    }
+
+    /*
+     * ========================================
+     * 1
+     * 月極
+     * ========================================
+     */
+
+    if (
+        parking.rentalType ===
+        "monthly"
+    ) {
+        return 1;
+    }
+
+    /*
+     * ========================================
+     * 3
+     * 店舗・施設利用者向け
+     * ========================================
+     */
+
+    if (
+        parking.isFacility
+    ) {
+        return 3;
+    }
+
+    /*
+     * ========================================
+     * 2
+     * 一般の時間貸し
+     * ========================================
+     */
+
+    return 2;
+}
+
+/*
+ * ============================================
+ * ParkPalおすすめ順
+ * ============================================
+ *
+ * ① 学生向け・学校向け
+ * ② 月極
+ * ③ 一般の時間貸し
+ * ④ 施設利用者向け
+ *
+ * 同じ種類の中では
+ * 学校・塾から近い順
  * ============================================
  */
 
@@ -275,8 +451,43 @@ export function sortParkingsByDistance(
         (
             a,
             b,
-        ) =>
-            a.distance -
-            b.distance,
+        ) => {
+            /*
+             * ====================================
+             * まず種類で比較
+             * ====================================
+             */
+
+            const priorityA =
+                parkingPriority(
+                    a,
+                );
+
+            const priorityB =
+                parkingPriority(
+                    b,
+                );
+
+            if (
+                priorityA !==
+                priorityB
+            ) {
+                return (
+                    priorityA -
+                    priorityB
+                );
+            }
+
+            /*
+             * ====================================
+             * 同じ種類なら距離順
+             * ====================================
+             */
+
+            return (
+                a.distance -
+                b.distance
+            );
+        },
     );
 }

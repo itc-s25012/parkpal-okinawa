@@ -5,6 +5,8 @@ import type {
 /*
  * ============================================
  * 沖縄県 中部の塾・予備校
+ *
+ * 実在確認できた教室のみ登録
  * ============================================
  */
 
@@ -19,6 +21,7 @@ export const CENTRAL_CRAM_SCHOOLS:
 
     {
         id: "cc1",
+
         name: "スクールIE 宜野湾校",
 
         aliases: [
@@ -26,6 +29,7 @@ export const CENTRAL_CRAM_SCHOOLS:
             "IE宜野湾",
             "宜野湾校",
             "school ie",
+            "スクールIE宜野湾",
         ],
 
         lat: 26.2715,
@@ -34,10 +38,14 @@ export const CENTRAL_CRAM_SCHOOLS:
         category: "cram",
 
         area: "宜野湾市真栄原",
+
+        address:
+            "沖縄県宜野湾市真栄原3丁目5-2",
     },
 
     {
         id: "cc2",
+
         name: "スクールIE 普天間校",
 
         aliases: [
@@ -45,6 +53,7 @@ export const CENTRAL_CRAM_SCHOOLS:
             "IE普天間",
             "普天間校",
             "school ie",
+            "スクールIE普天間",
         ],
 
         lat: 26.2865,
@@ -53,10 +62,14 @@ export const CENTRAL_CRAM_SCHOOLS:
         category: "cram",
 
         area: "宜野湾市上原",
+
+        address:
+            "沖縄県宜野湾市上原1丁目6-3",
     },
 
     {
         id: "cc3",
+
         name: "スクールIE 真志喜校",
 
         aliases: [
@@ -64,6 +77,7 @@ export const CENTRAL_CRAM_SCHOOLS:
             "IE真志喜",
             "真志喜校",
             "school ie",
+            "スクールIE真志喜",
         ],
 
         lat: 26.278,
@@ -72,10 +86,14 @@ export const CENTRAL_CRAM_SCHOOLS:
         category: "cram",
 
         area: "宜野湾市真志喜",
+
+        address:
+            "沖縄県宜野湾市真志喜2丁目7-10",
     },
 
     {
         id: "cc4",
+
         name: "学習受験社ガゼット 宜野湾教室",
 
         aliases: [
@@ -92,6 +110,9 @@ export const CENTRAL_CRAM_SCHOOLS:
         category: "cram",
 
         area: "宜野湾市上原",
+
+        address:
+            "沖縄県宜野湾市上原1丁目6-8",
     },
 
     /*
@@ -102,31 +123,15 @@ export const CENTRAL_CRAM_SCHOOLS:
 
     {
         id: "cc5",
-        name: "即解ゼミ127°E 沖縄市校",
+
+        name: "沖縄受験ゼミナール 沖縄本校",
 
         aliases: [
-            "即解ゼミ",
-            "即解",
-            "沖縄市",
-            "127E",
-        ],
-
-        lat: 26.3355,
-        lng: 127.798,
-
-        category: "cram",
-
-        area: "沖縄市",
-    },
-
-    {
-        id: "cc6",
-        name: "沖ゼミ 沖縄市校",
-
-        aliases: [
+            "沖縄受験ゼミナール",
             "沖ゼミ",
-            "沖縄市校",
-            "沖縄市",
+            "沖縄本校",
+            "沖ゼミ沖縄",
+            "沖ゼミ沖縄市",
         ],
 
         lat: 26.336,
@@ -134,17 +139,22 @@ export const CENTRAL_CRAM_SCHOOLS:
 
         category: "cram",
 
-        area: "沖縄市",
+        area: "沖縄市胡屋",
+
+        address:
+            "沖縄県沖縄市胡屋2丁目1-65",
     },
 
     {
-        id: "cc7",
+        id: "cc6",
+
         name: "学習受験社ガゼット 沖縄市本部教室",
 
         aliases: [
             "ガゼット",
             "ガゼット沖縄市",
             "沖縄市本部",
+            "沖縄市本部教室",
             "学習受験社",
             "GAZ",
         ],
@@ -155,10 +165,14 @@ export const CENTRAL_CRAM_SCHOOLS:
         category: "cram",
 
         area: "沖縄市宮里",
+
+        address:
+            "沖縄県沖縄市宮里2丁目8-10",
     },
 
     {
-        id: "cc8",
+        id: "cc7",
+
         name: "スクールIE 宮里校",
 
         aliases: [
@@ -166,6 +180,7 @@ export const CENTRAL_CRAM_SCHOOLS:
             "IE宮里",
             "宮里校",
             "school ie",
+            "スクールIE宮里",
         ],
 
         lat: 26.3425,
@@ -174,10 +189,14 @@ export const CENTRAL_CRAM_SCHOOLS:
         category: "cram",
 
         area: "沖縄市宮里",
+
+        address:
+            "沖縄県沖縄市宮里4丁目2-6",
     },
 
     {
-        id: "cc9",
+        id: "cc8",
+
         name: "スクールIE 泡瀬校",
 
         aliases: [
@@ -185,6 +204,7 @@ export const CENTRAL_CRAM_SCHOOLS:
             "IE泡瀬",
             "泡瀬校",
             "school ie",
+            "スクールIE泡瀬",
         ],
 
         lat: 26.3215,
@@ -193,44 +213,9 @@ export const CENTRAL_CRAM_SCHOOLS:
         category: "cram",
 
         area: "沖縄市泡瀬",
-    },
 
-    {
-        id: "cc10",
-        name: "明光義塾 高原教室",
-
-        aliases: [
-            "明光義塾",
-            "明光",
-            "高原教室",
-            "高原",
-        ],
-
-        lat: 26.322,
-        lng: 127.8235,
-
-        category: "cram",
-
-        area: "沖縄市高原",
-    },
-
-    {
-        id: "cc11",
-        name: "明光義塾 美里教室",
-
-        aliases: [
-            "明光義塾",
-            "明光",
-            "美里教室",
-            "美里",
-        ],
-
-        lat: 26.3495,
-        lng: 127.808,
-
-        category: "cram",
-
-        area: "沖縄市美原",
+        address:
+            "沖縄県沖縄市泡瀬4丁目4-1 2階",
     },
 
     /*
@@ -240,7 +225,8 @@ export const CENTRAL_CRAM_SCHOOLS:
      */
 
     {
-        id: "cc12",
+        id: "cc9",
+
         name: "スクールIE うるまみどり町校",
 
         aliases: [
@@ -248,6 +234,7 @@ export const CENTRAL_CRAM_SCHOOLS:
             "IEうるま",
             "みどり町",
             "うるまみどり町",
+            "スクールIEうるまみどり町",
         ],
 
         lat: 26.3785,
@@ -256,24 +243,8 @@ export const CENTRAL_CRAM_SCHOOLS:
         category: "cram",
 
         area: "うるま市みどり町",
-    },
 
-    {
-        id: "cc13",
-        name: "明光義塾 うるまみどり町教室",
-
-        aliases: [
-            "明光義塾",
-            "明光",
-            "うるま",
-            "みどり町",
-        ],
-
-        lat: 26.3775,
-        lng: 127.8555,
-
-        category: "cram",
-
-        area: "うるま市みどり町",
+        address:
+            "沖縄県うるま市みどり町4丁目19-12",
     },
 ];

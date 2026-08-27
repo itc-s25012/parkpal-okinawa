@@ -15,10 +15,6 @@ import {
     type Language,
 } from "@/lib/translations";
 
-type Mode =
-    | "student"
-    | "tourist";
-
 type ParkingResponse = {
     parkings?: ParkingSpot[];
     count?: number;
@@ -31,7 +27,6 @@ type ParkingResponse = {
 type UseParkingsArgs = {
     target: Target | null;
     language: Language;
-    mode: Mode;
 };
 
 /*
@@ -89,7 +84,6 @@ function sleep(
 export function useParkings({
                                 target,
                                 language,
-                                mode,
                             }: UseParkingsArgs) {
     const [
         parkings,
@@ -160,14 +154,15 @@ export function useParkings({
                 );
 
                 /*
-                 * 観光モード 3km
-                 * 学生モード 1.5km
+                 * ====================================
+                 * 学生向け
+                 *
+                 * 学校・塾から半径1.5km以内を検索
+                 * ====================================
                  */
+
                 const radius =
-                    mode ===
-                    "tourist"
-                        ? "3000"
-                        : "1500";
+                    "1500";
 
                 const params =
                     new URLSearchParams(
@@ -243,7 +238,7 @@ export function useParkings({
 
                         /*
                          * =================================
-                         * OSM取得成功
+                         * OSM + Supabase取得成功
                          * =================================
                          */
 
@@ -267,8 +262,7 @@ export function useParkings({
                          * =================================
                          * Supabase fallback
                          *
-                         * Overpassが一時的に失敗した状態。
-                         * 最終回でなければ少し待って再取得。
+                         * Overpassが一時的に失敗した場合
                          * =================================
                          */
 
@@ -284,15 +278,15 @@ export function useParkings({
                             );
 
                             /*
-                             * まだ再試行できる
+                             * まだ再試行できる場合
                              */
                             if (
                                 attempt <
                                 maxAttempts
                             ) {
                                 /*
-                                 * テスト駐車場を一瞬表示せず、
-                                 * loadingのまま次を試す
+                                 * 一瞬fallback結果を表示せず、
+                                 * loadingのまま再試行する
                                  */
                                 await sleep(
                                     1000,
@@ -303,10 +297,9 @@ export function useParkings({
                             }
 
                             /*
-                             * 3回全部Overpass失敗。
+                             * 3回すべてOverpass失敗
                              *
-                             * この場合だけSupabaseの結果を
-                             * 最終結果として表示する。
+                             * 最後だけSupabaseの結果を表示
                              */
                             setParkings(
                                 data.parkings ??
@@ -397,7 +390,6 @@ export function useParkings({
         [
             target,
             language,
-            mode,
             t.error,
         ],
     );

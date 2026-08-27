@@ -60,14 +60,24 @@ function localizedName(
         string,
         string
     >,
-    language: Language,
+
+    language:
+    Language,
 ) {
+    /*
+     * name / operator / brand の
+     * どれかがある駐車場だけ
+     * 名前ありとして扱う
+     */
+
     const base =
         tags.name?.trim() ||
         tags.operator?.trim() ||
         tags.brand?.trim();
 
-    if (!base) {
+    if (
+        !base
+    ) {
         return null;
     }
 
@@ -144,7 +154,9 @@ function localizedOperator(
         string,
         string
     >,
-    language: Language,
+
+    language:
+    Language,
 ) {
     if (
         language ===
@@ -208,13 +220,19 @@ function localizedOperator(
  */
 
 export function convertOsmParking(
-    element: OverpassElement,
+    element:
+    OverpassElement,
+
     origin: {
         lat: number;
         lng: number;
     },
-    radius: number,
-    language: Language,
+
+    radius:
+    number,
+
+    language:
+    Language,
 ): ApiParking | null {
     const tags =
         element.tags ??
@@ -237,9 +255,16 @@ export function convertOsmParking(
         return null;
     }
 
+    /*
+     * ========================================
+     * 距離
+     * ========================================
+     */
+
     const distance =
         distanceMeters(
             origin,
+
             {
                 lat:
                 parkingLat,
@@ -255,23 +280,44 @@ export function convertOsmParking(
         return null;
     }
 
+    /*
+     * ========================================
+     * 利用制限
+     * ========================================
+     */
     const access =
         tags.access
             ?.toLowerCase();
 
     /*
-     * 私有地などは除外
+     * ========================================
+     * 一般利用できない駐車場は除外
+     * ========================================
+     *
+     * private   → 私有地
+     * no        → 利用不可
+     * emergency → 緊急車両用
+     * customers → 店舗・施設の利用者専用
+     *
+     * ParkPalでは学校・塾などへ行く人が
+     * 普通に利用できる駐車場だけを表示する。
      */
+
     if (
-        access ===
-        "private" ||
-        access ===
-        "no" ||
-        access ===
-        "emergency"
+        access === "private" ||
+        access === "no" ||
+        access === "emergency" ||
+        access === "customers"
     ) {
         return null;
     }
+
+
+    /*
+     * ========================================
+     * 駐車場タイプ
+     * ========================================
+     */
 
     const parkingType =
         tags.parking
@@ -280,6 +326,7 @@ export function convertOsmParking(
     /*
      * 路上駐車系は除外
      */
+
     if (
         parkingType ===
         "lane" ||
@@ -294,15 +341,46 @@ export function convertOsmParking(
             language
             ];
 
+    /*
+     * ========================================
+     * 駐車場名
+     * ========================================
+     *
+     * 名前・運営会社・ブランド名が
+     * 何も無い駐車場は表示しない。
+     *
+     * これで一覧が
+     * 「駐車場」「駐車場」「駐車場」
+     * だらけになるのを防ぐ。
+     * ========================================
+     */
+
     const name =
         localizedName(
             tags,
             language,
-        ) ??
-        t.parking;
+        );
+
+    if (
+        !name
+    ) {
+        return null;
+    }
+
+    /*
+     * ========================================
+     * OSM ID
+     * ========================================
+     */
 
     const sourceId =
         `osm-${element.type}-${element.id}`;
+
+    /*
+     * ========================================
+     * 補足情報
+     * ========================================
+     */
 
     const info:
         string[] =
@@ -404,6 +482,12 @@ export function convertOsmParking(
         );
     }
 
+    /*
+     * ========================================
+     * ParkPal形式に変換
+     * ========================================
+     */
+
     return {
         id:
         sourceId,
@@ -438,6 +522,12 @@ export function convertOsmParking(
 
         distance,
 
+        /*
+         * ====================================
+         * 安全情報
+         * ====================================
+         */
+
         securityCamera:
             false,
 
@@ -452,6 +542,12 @@ export function convertOsmParking(
 
         studentFriendly:
             false,
+
+        /*
+         * ====================================
+         * 基本情報
+         * ====================================
+         */
 
         openingHours:
             tags.opening_hours ??
@@ -472,28 +568,31 @@ export function convertOsmParking(
             "osm",
 
         /*
-         * ========================================
+         * ====================================
          * 駐車場の特徴
-         * ========================================
+         * ====================================
          */
 
         /*
          * OSMの fee=yes なら有料
          */
+
         isPaid:
             tags.fee ===
             "yes",
 
         /*
-         * 「穴場」はParkPal独自情報なので、
-         * OSMだけでは勝手に穴場判定しない
+         * 穴場はParkPal独自情報。
+         * OSMだけでは判定しない。
          */
+
         isHidden:
             false,
 
         /*
          * 立体・地下なら屋内扱い
          */
+
         isIndoor:
             parkingType ===
             "multi-storey" ||
@@ -501,19 +600,38 @@ export function convertOsmParking(
             "underground",
 
         /*
-         * customers は
-         * お店・施設利用者向け駐車場
+         * お店・施設利用者向け
          */
+
         isFacility:
             access ===
             "customers",
 
         /*
          * wheelchair=yes なら
-         * バリアフリー対応
+         * バリアフリー
          */
+
         isAccessible:
             tags.wheelchair ===
             "yes",
+
+        /*
+         * ====================================
+         * 月極対応
+         * ====================================
+         *
+         * OSM側には月極料金の
+         * 確認済み情報を持たせない。
+         *
+         * 月極はSupabaseの
+         * 確認済みデータから扱う。
+         */
+
+        rentalType:
+            "hourly",
+
+        monthlyPrice:
+            null,
     };
 }

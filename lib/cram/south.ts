@@ -5,16 +5,8 @@ import type {
 /*
  * ============================================
  * 沖縄県 南部の塾・予備校
- * ============================================
  *
- * 那覇市
- * 浦添市
- * 豊見城市
- * 糸満市
- * 南風原町
- * 与那原町
- * 西原町
- * 八重瀬町 など
+ * 実在を確認できた教室のみ登録
  * ============================================
  */
 
@@ -29,6 +21,7 @@ export const SOUTH_CRAM_SCHOOLS:
 
     {
         id: "cs1",
+
         name: "学習受験社ガゼット 那覇県庁前教室",
 
         aliases: [
@@ -46,16 +39,19 @@ export const SOUTH_CRAM_SCHOOLS:
         category: "cram",
 
         area: "那覇市松尾",
+
+        address:
+            "沖縄県那覇市松尾1丁目18-22 合人社沖縄県庁前ビル4F",
     },
 
     {
         id: "cs2",
-        name: "学習受験社ガゼット 首里本部教室",
+
+        name: "学習受験社ガゼット 首里教室",
 
         aliases: [
             "ガゼット",
             "ガゼット首里",
-            "首里本部",
             "首里教室",
             "学習受験社",
             "GAZ",
@@ -66,11 +62,15 @@ export const SOUTH_CRAM_SCHOOLS:
 
         category: "cram",
 
-        area: "那覇市首里儀保町",
+        area: "那覇市首里汀良町",
+
+        address:
+            "沖縄県那覇市首里汀良町1丁目18-1",
     },
 
     {
         id: "cs3",
+
         name: "学習受験社ガゼット 小禄教室",
 
         aliases: [
@@ -87,10 +87,14 @@ export const SOUTH_CRAM_SCHOOLS:
         category: "cram",
 
         area: "那覇市赤嶺",
+
+        address:
+            "沖縄県那覇市赤嶺1丁目5-1",
     },
 
     {
         id: "cs4",
+
         name: "学習受験社ガゼット 新都心教室",
 
         aliases: [
@@ -108,53 +112,20 @@ export const SOUTH_CRAM_SCHOOLS:
         category: "cram",
 
         area: "那覇市天久",
+
+        address:
+            "沖縄県那覇市天久2丁目31-7 2F",
     },
 
     {
         id: "cs5",
-        name: "即解ゼミ127°E おもろまち本校",
+
+        name: "沖縄受験ゼミナール 那覇本校",
 
         aliases: [
-            "即解ゼミ",
-            "即解",
-            "おもろまち",
-            "127E",
-        ],
-
-        lat: 26.223,
-        lng: 127.696,
-
-        category: "cram",
-
-        area: "那覇市おもろまち",
-    },
-
-    {
-        id: "cs6",
-        name: "即解ゼミ 首里校",
-
-        aliases: [
-            "即解ゼミ",
-            "即解",
-            "首里",
-            "127E",
-        ],
-
-        lat: 26.218,
-        lng: 127.715,
-
-        category: "cram",
-
-        area: "那覇市首里",
-    },
-
-    {
-        id: "cs7",
-        name: "沖ゼミ 那覇本校",
-
-        aliases: [
-            "沖ゼミ",
             "沖縄受験ゼミナール",
+            "沖ゼミ",
+            "沖ゼミ那覇",
             "那覇本校",
         ],
 
@@ -163,7 +134,10 @@ export const SOUTH_CRAM_SCHOOLS:
 
         category: "cram",
 
-        area: "那覇市",
+        area: "那覇市安里",
+
+        address:
+            "沖縄県那覇市安里2丁目9-11 ハマ・ブリーゼ那覇第1",
     },
 
     /*
@@ -173,7 +147,8 @@ export const SOUTH_CRAM_SCHOOLS:
      */
 
     {
-        id: "cs8",
+        id: "cs6",
+
         name: "学習受験社ガゼット 浦添教室",
 
         aliases: [
@@ -190,6 +165,9 @@ export const SOUTH_CRAM_SCHOOLS:
         category: "cram",
 
         area: "浦添市前田",
+
+        address:
+            "沖縄県浦添市前田632-2 ウエストゲート1F",
     },
 
     /*
@@ -199,7 +177,8 @@ export const SOUTH_CRAM_SCHOOLS:
      */
 
     {
-        id: "cs9",
+        id: "cs7",
+
         name: "学習受験社ガゼット 南風原教室",
 
         aliases: [
@@ -216,16 +195,21 @@ export const SOUTH_CRAM_SCHOOLS:
         category: "cram",
 
         area: "南風原町与那覇",
+
+        address:
+            "沖縄県島尻郡南風原町与那覇279-1",
     },
 
     {
-        id: "cs10",
+        id: "cs8",
+
         name: "アーチ学習塾 南風原校",
 
         aliases: [
             "アーチ学習塾",
             "アーチ",
             "南風原校",
+            "アーチ南風原",
         ],
 
         lat: 26.193,
@@ -234,10 +218,14 @@ export const SOUTH_CRAM_SCHOOLS:
         category: "cram",
 
         area: "南風原町与那覇",
+
+        address:
+            "沖縄県島尻郡南風原町与那覇178-1",
     },
 
     {
-        id: "cs11",
+        id: "cs9",
+
         name: "STAR進学塾 南星校",
 
         aliases: [
@@ -245,6 +233,7 @@ export const SOUTH_CRAM_SCHOOLS:
             "STAR",
             "スター進学塾",
             "南星校",
+            "スター南星",
         ],
 
         lat: 26.1845,
@@ -253,10 +242,14 @@ export const SOUTH_CRAM_SCHOOLS:
         category: "cram",
 
         area: "南風原町照屋",
+
+        address:
+            "沖縄県島尻郡南風原町字照屋92",
     },
 
     {
-        id: "cs12",
+        id: "cs10",
+
         name: "個別指導Axis 津嘉山校",
 
         aliases: [
@@ -265,6 +258,7 @@ export const SOUTH_CRAM_SCHOOLS:
             "個別指導Axis",
             "津嘉山校",
             "Axis津嘉山",
+            "アクシス津嘉山",
         ],
 
         lat: 26.1835,
@@ -273,6 +267,9 @@ export const SOUTH_CRAM_SCHOOLS:
         category: "cram",
 
         area: "南風原町津嘉山",
+
+        address:
+            "沖縄県島尻郡南風原町津嘉山1277-12 セゾンライト津嘉山2階A",
     },
 
     /*
@@ -282,13 +279,16 @@ export const SOUTH_CRAM_SCHOOLS:
      */
 
     {
-        id: "cs13",
-        name: "津田塾 東風平教室",
+        id: "cs11",
+
+        name: "津田塾 小中部・東風平教室",
 
         aliases: [
             "津田塾",
             "東風平",
             "東風平教室",
+            "津田塾東風平",
+            "津田塾小中部",
         ],
 
         lat: 26.1545,
@@ -296,6 +296,9 @@ export const SOUTH_CRAM_SCHOOLS:
 
         category: "cram",
 
-        area: "八重瀬町",
+        area: "八重瀬町外間",
+
+        address:
+            "沖縄県島尻郡八重瀬町字外間192",
     },
 ];

@@ -40,7 +40,43 @@ import {
 
 /*
  * ============================================
- * Landmark型を再export
+ * エリア
+ * ============================================
+ */
+
+import {
+    NORTH_AREAS,
+} from "@/lib/areas/north";
+
+import {
+    CENTRAL_AREAS,
+} from "@/lib/areas/central";
+
+import {
+    SOUTH_AREAS,
+} from "@/lib/areas/south";
+
+/*
+ * ============================================
+ * 観光地
+ * ============================================
+ */
+
+import {
+    NORTH_TOURIST_SPOTS,
+} from "@/lib/tourist/north";
+
+import {
+    CENTRAL_TOURIST_SPOTS,
+} from "@/lib/tourist/central";
+
+import {
+    SOUTH_TOURIST_SPOTS,
+} from "@/lib/tourist/south";
+
+/*
+ * ============================================
+ * Landmark型
  * ============================================
  */
 
@@ -82,107 +118,9 @@ export const CRAM_SCHOOLS:
 
 export const AREAS:
     Landmark[] = [
-    {
-        id: "a1",
-
-        name:
-            "開南エリア",
-
-        aliases: [
-            "開南",
-        ],
-
-        lat:
-            26.2105,
-
-        lng:
-            127.6842,
-
-        category:
-            "area",
-    },
-
-    {
-        id: "a2",
-
-        name:
-            "安里エリア",
-
-        aliases: [
-            "安里",
-        ],
-
-        lat:
-            26.2185,
-
-        lng:
-            127.694,
-
-        category:
-            "area",
-    },
-
-    {
-        id: "a3",
-
-        name:
-            "壺川エリア",
-
-        aliases: [
-            "壺川",
-        ],
-
-        lat:
-            26.205,
-
-        lng:
-            127.678,
-
-        category:
-            "area",
-    },
-
-    {
-        id: "a4",
-
-        name:
-            "コザ (沖縄市中心)",
-
-        aliases: [
-            "コザ",
-            "沖縄市",
-        ],
-
-        lat:
-            26.3365,
-
-        lng:
-            127.7981,
-
-        category:
-            "area",
-    },
-
-    {
-        id: "a5",
-
-        name:
-            "おもろまち・新都心",
-
-        aliases: [
-            "おもろまち",
-            "新都心",
-        ],
-
-        lat:
-            26.223,
-
-        lng:
-            127.6955,
-
-        category:
-            "area",
-    },
+    ...NORTH_AREAS,
+    ...CENTRAL_AREAS,
+    ...SOUTH_AREAS,
 ];
 
 /*
@@ -193,232 +131,14 @@ export const AREAS:
 
 export const TOURIST_SPOTS:
     Landmark[] = [
-    {
-        id: "t1",
-
-        name:
-            "国際通り",
-
-        aliases: [
-            "国際通り",
-            "kokusai",
-            "牧志",
-        ],
-
-        lat:
-            26.2145,
-
-        lng:
-            127.6858,
-
-        category:
-            "tourist",
-
-        area:
-            "那覇市",
-    },
-
-    {
-        id: "t2",
-
-        name:
-            "首里城公園",
-
-        aliases: [
-            "首里城",
-            "shuri",
-            "shurijo",
-        ],
-
-        lat:
-            26.217,
-
-        lng:
-            127.7194,
-
-        category:
-            "tourist",
-
-        area:
-            "那覇市首里",
-    },
-
-    {
-        id: "t3",
-
-        name:
-            "波の上ビーチ・波の上宮",
-
-        aliases: [
-            "波の上",
-            "naminoue",
-        ],
-
-        lat:
-            26.2237,
-
-        lng:
-            127.672,
-
-        category:
-            "tourist",
-
-        area:
-            "那覇市若狭",
-    },
-
-    {
-        id: "t4",
-
-        name:
-            "美浜アメリカンビレッジ",
-
-        aliases: [
-            "アメリカンビレッジ",
-            "美浜",
-            "mihama",
-            "chatan",
-        ],
-
-        lat:
-            26.3167,
-
-        lng:
-            127.755,
-
-        category:
-            "tourist",
-
-        area:
-            "北谷町美浜",
-    },
-
-    {
-        id: "t5",
-
-        name:
-            "残波岬",
-
-        aliases: [
-            "残波",
-            "zanpa",
-        ],
-
-        lat:
-            26.4425,
-
-        lng:
-            127.7075,
-
-        category:
-            "tourist",
-
-        area:
-            "読谷村",
-    },
-
-    {
-        id: "t6",
-
-        name:
-            "沖縄美ら海水族館",
-
-        aliases: [
-            "美ら海",
-            "水族館",
-            "churaumi",
-        ],
-
-        lat:
-            26.6944,
-
-        lng:
-            127.8778,
-
-        category:
-            "tourist",
-
-        area:
-            "本部町",
-    },
-
-    {
-        id: "t7",
-
-        name:
-            "古宇利島・古宇利大橋",
-
-        aliases: [
-            "古宇利",
-            "kouri",
-        ],
-
-        lat:
-            26.7038,
-
-        lng:
-            128.0207,
-
-        category:
-            "tourist",
-
-        area:
-            "今帰仁村",
-    },
-
-    {
-        id: "t8",
-
-        name:
-            "斎場御嶽 (せーふぁうたき)",
-
-        aliases: [
-            "斎場御嶽",
-            "セーファ",
-            "sefa",
-        ],
-
-        lat:
-            26.1717,
-
-        lng:
-            127.8283,
-
-        category:
-            "tourist",
-
-        area:
-            "南城市",
-    },
-
-    {
-        id: "t9",
-
-        name:
-            "ひめゆりの塔・平和祈念資料館",
-
-        aliases: [
-            "ひめゆり",
-            "himeyuri",
-        ],
-
-        lat:
-            26.1006,
-
-        lng:
-            127.7267,
-
-        category:
-            "tourist",
-
-        area:
-            "糸満市",
-    },
+    ...NORTH_TOURIST_SPOTS,
+    ...CENTRAL_TOURIST_SPOTS,
+    ...SOUTH_TOURIST_SPOTS,
 ];
 
 /*
  * ============================================
- * 検索対象を全部合体
+ * 検索対象
  * ============================================
  */
 

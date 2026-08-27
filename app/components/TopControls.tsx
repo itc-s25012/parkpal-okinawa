@@ -11,6 +11,9 @@ type Mode =
     | "tourist";
 
 type TopControlsProps = {
+    /*
+     * 今は親側との互換性のため残しておく
+     */
     mode:
         Mode;
 
@@ -20,6 +23,9 @@ type TopControlsProps = {
     languageOpen:
         boolean;
 
+    /*
+     * 今は親側との互換性のため残しておく
+     */
     onModeChange:
         (
             mode:
@@ -37,15 +43,21 @@ type TopControlsProps = {
             language:
             Language,
         ) => void;
+
+    /*
+     * ParkPalロゴを押したとき
+     * ホームへ戻る
+     */
+    onHome:
+        () => void;
 };
 
 export function TopControls({
-                                mode,
                                 language,
                                 languageOpen,
-                                onModeChange,
                                 onLanguageOpenChange,
                                 onLanguageChange,
+                                onHome,
                             }: TopControlsProps) {
     const t =
         TEXT[
@@ -56,7 +68,11 @@ export function TopControls({
         <>
             {/*
              * ====================================
-             * LOGO
+             * LOGO / HOME
+             * ====================================
+             *
+             * ParkPalロゴを押すと
+             * 検索前のホーム状態へ戻る
              * ====================================
              */}
 
@@ -67,7 +83,25 @@ export function TopControls({
                         1200,
                 }}
             >
-                <div className="rounded-2xl bg-slate-950 px-4 py-3 shadow-xl">
+                <button
+                    type="button"
+                    onClick={
+                        onHome
+                    }
+                    aria-label="ホームに戻る"
+                    title="ホームに戻る"
+                    className="
+                        rounded-2xl
+                        bg-slate-950
+                        px-4
+                        py-3
+                        text-left
+                        shadow-xl
+                        transition
+                        hover:bg-slate-800
+                        active:scale-95
+                    "
+                >
                     <p className="text-sm font-black text-white">
                         🅿️ ParkPal
                     </p>
@@ -75,12 +109,16 @@ export function TopControls({
                     <p className="text-[9px] font-bold tracking-widest text-slate-400">
                         OKINAWA
                     </p>
-                </div>
+                </button>
             </div>
 
             {/*
              * ====================================
-             * STUDENT / TRAVEL
+             * STUDENT MODE
+             * ====================================
+             *
+             * 観光モードは廃止。
+             * ParkPalは学生向け駐車場検索に特化。
              * ====================================
              */}
 
@@ -91,46 +129,10 @@ export function TopControls({
                         1200,
                 }}
             >
-                <div className="flex rounded-2xl bg-white p-1.5 shadow-lg">
-                    <button
-                        type="button"
-                        onClick={() =>
-                            onModeChange(
-                                "student",
-                            )
-                        }
-                        className={`rounded-xl px-4 py-2 text-xs font-black ${
-                            mode ===
-                            "student"
-                                ? "bg-sky-500 text-white"
-                                : "text-slate-500"
-                        }`}
-                    >
-                        🎓{" "}
-                        {
-                            t.student
-                        }
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() =>
-                            onModeChange(
-                                "tourist",
-                            )
-                        }
-                        className={`rounded-xl px-4 py-2 text-xs font-black ${
-                            mode ===
-                            "tourist"
-                                ? "bg-sky-500 text-white"
-                                : "text-slate-500"
-                        }`}
-                    >
-                        🏝️{" "}
-                        {
-                            t.tourist
-                        }
-                    </button>
+                <div className="rounded-2xl bg-white px-4 py-3 shadow-lg">
+                    <p className="text-xs font-black text-sky-600">
+                        🎓 学生向け
+                    </p>
                 </div>
             </div>
 

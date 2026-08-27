@@ -45,16 +45,65 @@ type ParkingSearchCacheRow = {
  */
 
 function supabasePrice(
-    parking:
-    SupabaseParking,
-
-    language:
-    Language,
+    parking: SupabaseParking,
+    language: Language,
 ) {
     const t =
         TEXT[
             language
             ];
+
+    /*
+     * ========================================
+     * 月極
+     * ========================================
+     */
+
+    if (
+        parking.rental_type ===
+        "monthly" &&
+        parking.monthly_price !==
+        null &&
+        parking.monthly_price !==
+        undefined
+    ) {
+        if (
+            language ===
+            "ja"
+        ) {
+            return `月額 ${parking.monthly_price.toLocaleString(
+                "ja-JP",
+            )}円`;
+        }
+
+        if (
+            language ===
+            "en"
+        ) {
+            return `¥${parking.monthly_price.toLocaleString(
+                "ja-JP",
+            )} / month`;
+        }
+
+        if (
+            language ===
+            "ko"
+        ) {
+            return `월 ¥${parking.monthly_price.toLocaleString(
+                "ja-JP",
+            )}`;
+        }
+
+        return `¥${parking.monthly_price.toLocaleString(
+            "ja-JP",
+        )} / 月`;
+    }
+
+    /*
+     * ========================================
+     * 時間貸し
+     * ========================================
+     */
 
     if (
         language ===
@@ -85,22 +134,12 @@ function supabasePrice(
  * ============================================
  * 検索キャッシュのキーを作る
  * ============================================
- *
- * 緯度経度は小数4桁までにして、
- * ほぼ同じ場所の検索を
- * 同じキャッシュとして扱う。
- * ============================================
  */
 
 export function createParkingSearchKey(
-    lat:
-    number,
-
-    lng:
-    number,
-
-    radius:
-    number,
+    lat: number,
+    lng: number,
+    radius: number,
 ) {
     return [
         lat.toFixed(
@@ -126,14 +165,9 @@ export function createParkingSearchKey(
  */
 
 export async function getParkingSearchCache(
-    lat:
-    number,
-
-    lng:
-    number,
-
-    radius:
-    number,
+    lat: number,
+    lng: number,
+    radius: number,
 ) {
     const searchKey =
         createParkingSearchKey(
@@ -186,24 +220,11 @@ export async function getParkingSearchCache(
  */
 
 export async function saveParkingSearchCache(
-    lat:
-    number,
-
-    lng:
-    number,
-
-    radius:
-    number,
-
-    parkings:
-    ApiParking[],
+    lat: number,
+    lng: number,
+    radius: number,
+    parkings: ApiParking[],
 ) {
-    /*
-     * 空の検索結果は保存しない。
-     *
-     * 一時的なOverpass障害で
-     * 空データをキャッシュしないため。
-     */
     if (
         parkings.length ===
         0
@@ -300,14 +321,9 @@ export function isParkingCacheFresh(
  */
 
 export async function loadSupabaseParkings(
-    lat:
-    number,
-
-    lng:
-    number,
-
-    radius:
-    number,
+    lat: number,
+    lng: number,
+    radius: number,
 ) {
     const latDelta =
         radius /
@@ -433,9 +449,57 @@ export function convertSupabaseParking(
             },
         );
 
+    const rentalType =
+        parking.rental_type ??
+        "hourly";
+
     const tags:
         string[] =
         [];
+
+    /*
+     * ========================================
+     * 月極タグ
+     * ========================================
+     */
+
+    if (
+        rentalType ===
+        "monthly"
+    ) {
+        if (
+            language ===
+            "ja"
+        ) {
+            tags.push(
+                "月極",
+            );
+        } else if (
+            language ===
+            "en"
+        ) {
+            tags.push(
+                "Monthly",
+            );
+        } else if (
+            language ===
+            "ko"
+        ) {
+            tags.push(
+                "월정기",
+            );
+        } else {
+            tags.push(
+                "月租",
+            );
+        }
+    }
+
+    /*
+     * ========================================
+     * 安全情報
+     * ========================================
+     */
 
     if (
         parking.security_camera
@@ -507,7 +571,10 @@ export function convertSupabaseParking(
         tags,
 
         emoji:
-            "🅿️",
+            rentalType ===
+            "monthly"
+                ? "M"
+                : "🅿️",
 
         photo:
             "",
@@ -560,9 +627,8 @@ export function convertSupabaseParking(
          */
 
         isPaid:
-            Boolean(
-                parking.is_paid,
-            ),
+            parking.is_paid ??
+            !parking.is_free,
 
         isHidden:
             Boolean(
@@ -583,5 +649,16 @@ export function convertSupabaseParking(
             Boolean(
                 parking.is_accessible,
             ),
+
+        /*
+         * ========================================
+         * 月極
+         * ========================================
+         */
+
+        rentalType,
+
+        monthlyPrice:
+        parking.monthly_price,
     };
 }

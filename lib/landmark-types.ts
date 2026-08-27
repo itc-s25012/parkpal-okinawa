@@ -31,8 +31,8 @@ export type Landmark = {
      * この位置を中心に
      * 周辺駐車場を検索する
      */
-    lat?: number;
-    lng?: number;
+    lat: number;
+    lng: number;
 
     /*
      * 検索地点の種類

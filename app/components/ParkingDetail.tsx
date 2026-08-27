@@ -1,9 +1,13 @@
 "use client";
 
 import {
+    useRef,
+    useState,
+    type PointerEvent,
+} from "react";
+
+import {
     distanceMeters,
-    driveMinutes,
-    walkMinutes,
 } from "@/lib/okinawa-data";
 
 import {
@@ -14,7 +18,19 @@ import {
 import type {
     ParkingSpot,
     Target,
-} from "@/app/components/ParkingList";
+} from "./ParkingList";
+
+import {
+    ParkingDragHandle,
+} from "./ParkingDragHandle";
+
+import {
+    ParkingInfoSection,
+} from "./ParkingInfoSection";
+
+import {
+    ParkingRouteButton,
+} from "./ParkingRouteButton";
 
 type ParkingDetailProps = {
     spot: ParkingSpot;
@@ -32,6 +48,210 @@ export function ParkingDetail({
     const t =
         TEXT[language];
 
+    /*
+     * ====================================
+     * パネルの高さ
+     * ====================================
+     */
+
+    const [
+        panelHeight,
+        setPanelHeight,
+    ] = useState<number | null>(
+        null,
+    );
+
+    const [
+        isDragging,
+        setIsDragging,
+    ] = useState(false);
+
+    /*
+     * ドラッグを始めたときの
+     * マウス / 指のY座標
+     */
+    const dragStartY =
+        useRef(0);
+
+    /*
+     * ドラッグ開始時の
+     * パネル高さ
+     */
+    const dragStartHeight =
+        useRef(0);
+
+    /*
+     * ====================================
+     * 高さ取得
+     * ====================================
+     */
+
+    function getMaxHeight() {
+        return (
+            window.innerHeight *
+            0.85
+        );
+    }
+
+    function getMinHeight() {
+        /*
+         * 小さくした状態
+         *
+         * バー
+         * 駐車場名
+         * 徒歩・車・距離
+         * ルートボタン
+         *
+         * が見えるくらい
+         */
+        return 300;
+    }
+
+    /*
+     * ====================================
+     * ドラッグ開始
+     * ====================================
+     */
+
+    const handlePointerDown = (
+        event: PointerEvent<HTMLDivElement>,
+    ) => {
+        /*
+         * PCは左クリックだけ
+         */
+        if (
+            event.pointerType === "mouse" &&
+            event.button !== 0
+        ) {
+            return;
+        }
+
+        const maxHeight =
+            getMaxHeight();
+
+        /*
+         * 初回は85vh相当
+         */
+        const currentHeight =
+            panelHeight ??
+            maxHeight;
+
+        setIsDragging(true);
+
+        dragStartY.current =
+            event.clientY;
+
+        dragStartHeight.current =
+            currentHeight;
+
+        event.currentTarget.setPointerCapture(
+            event.pointerId,
+        );
+    };
+
+    /*
+     * ====================================
+     * ドラッグ中
+     * ====================================
+     */
+
+    const handlePointerMove = (
+        event: PointerEvent<HTMLDivElement>,
+    ) => {
+        if (!isDragging) {
+            return;
+        }
+
+        /*
+         * 下へ動かすと
+         * clientYが増える
+         */
+        const movedY =
+            event.clientY -
+            dragStartY.current;
+
+        /*
+         * 下へ動かしたぶん
+         * 高さを小さくする
+         *
+         * 上へ動かしたら
+         * 高さを大きくする
+         */
+        const nextHeight =
+            dragStartHeight.current -
+            movedY;
+
+        const minHeight =
+            getMinHeight();
+
+        const maxHeight =
+            getMaxHeight();
+
+        /*
+         * 最小〜最大の間に制限
+         */
+        const limitedHeight =
+            Math.min(
+                Math.max(
+                    nextHeight,
+                    minHeight,
+                ),
+                maxHeight,
+            );
+
+        setPanelHeight(
+            limitedHeight,
+        );
+    };
+
+    /*
+     * ====================================
+     * ドラッグ終了
+     * ====================================
+     */
+
+    const handlePointerUp = (
+        event: PointerEvent<HTMLDivElement>,
+    ) => {
+        if (!isDragging) {
+            return;
+        }
+
+        setIsDragging(false);
+
+        if (
+            event.currentTarget.hasPointerCapture(
+                event.pointerId,
+            )
+        ) {
+            event.currentTarget.releasePointerCapture(
+                event.pointerId,
+            );
+        }
+
+        /*
+         * 今回はスナップさせない
+         *
+         * → 手を離した高さでそのまま止まる
+         */
+    };
+
+    /*
+     * ====================================
+     * ドラッグ中断
+     * ====================================
+     */
+
+    const handlePointerCancel = () => {
+        setIsDragging(false);
+    };
+
+    /*
+     * ====================================
+     * 距離
+     * ====================================
+     */
+
     const distance =
         target
             ? distanceMeters(
@@ -40,227 +260,135 @@ export function ParkingDetail({
             )
             : spot.distance;
 
+    /*
+     * ====================================
+     * Google Maps
+     * ====================================
+     */
+
     const navigationUrl =
         `https://www.google.com/maps/dir/?api=1` +
         `&destination=${spot.lat},${spot.lng}` +
         `&travelmode=driving` +
         `&dir_action=navigate`;
 
+    /*
+     * ====================================
+     * 表示
+     * ====================================
+     */
+
     return (
         <div
-            className="absolute inset-x-0 bottom-0 rounded-t-[32px] bg-white p-5 shadow-xl"
+            className="
+                absolute
+                inset-x-0
+                bottom-0
+                flex
+                flex-col
+                overflow-hidden
+                rounded-t-[32px]
+                bg-white
+                shadow-xl
+            "
             style={{
-                zIndex: 1100,
+                zIndex: 11000,
+
+                /*
+                 * ここが今回の重要部分
+                 *
+                 * パネルを移動するのではなく
+                 * 高さそのものを変える
+                 */
+                height:
+                    panelHeight ===
+                    null
+                        ? "85vh"
+                        : `${panelHeight}px`,
+
+                maxHeight:
+                    "85vh",
+
+                /*
+                 * ドラッグしていない時は
+                 * なめらかに高さ変更
+                 */
+                transition:
+                    isDragging
+                        ? "none"
+                        : "height 180ms ease-out",
             }}
         >
-            <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-slate-300" />
-
-            <div className="flex gap-3">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600 text-xl font-black text-white">
-                    P
-                </div>
-
-                <div className="flex-1">
-                    <p className="text-[10px] font-black text-slate-400">
-                        {t.parkingInfo}
-                    </p>
-
-                    <h3 className="font-black">
-                        {spot.name}
-                    </h3>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={onClose}
-                >
-                    ×
-                </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-                <Info
-                    label={t.walk}
-                    value={`${walkMinutes(
-                        distance,
-                    )} ${t.minute}`}
-                />
-
-                <Info
-                    label={t.drive}
-                    value={`${driveMinutes(
-                        distance,
-                    )} ${t.minute}`}
-                />
-
-                <Info
-                    label={t.distance}
-                    value={`${Math.round(
-                        distance,
-                    )}m`}
-                />
-            </div>
-
-            <div className="mt-3 rounded-2xl bg-orange-50 p-4">
-                <p className="text-[10px] font-black text-orange-400">
-                    PRICE
-                </p>
-
-                <p className="font-black text-orange-600">
-                    {spot.price}
-                </p>
-            </div>
-
             {/*
              * ====================================
-             * 駐車場の特徴
+             * 上下ドラッグバー
              * ====================================
              */}
 
-            {(spot.isPaid ||
-                spot.isHidden ||
-                spot.isIndoor ||
-                spot.isFacility ||
-                spot.isAccessible) && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                    {spot.isPaid && (
-                        <span className="rounded-full bg-amber-100 px-3 py-1.5 text-[10px] font-black text-amber-700">
-                            💰{" "}
-                            {
-                                t.paidParking
-                            }
-                        </span>
-                    )}
+            <ParkingDragHandle
+                isDragging={
+                    isDragging
+                }
+                onPointerDown={
+                    handlePointerDown
+                }
+                onPointerMove={
+                    handlePointerMove
+                }
+                onPointerUp={
+                    handlePointerUp
+                }
+                onPointerCancel={
+                    handlePointerCancel
+                }
+            />
 
-                    {spot.isHidden && (
-                        <span className="rounded-full bg-violet-100 px-3 py-1.5 text-[10px] font-black text-violet-700">
-                            👀{" "}
-                            {
-                                t.hiddenParking
-                            }
-                        </span>
-                    )}
+            {/*
+             * ====================================
+             * 駐車場情報
+             *
+             * flex-1 なので
+             * パネルが小さくなると
+             * この部分だけ縮む
+             * ====================================
+             */}
 
-                    {spot.isIndoor && (
-                        <span className="rounded-full bg-sky-100 px-3 py-1.5 text-[10px] font-black text-sky-700">
-                            🏢{" "}
-                            {
-                                t.indoorParking
-                            }
-                        </span>
-                    )}
+            <ParkingInfoSection
+                spot={
+                    spot
+                }
+                distance={
+                    distance
+                }
+                language={
+                    language
+                }
+                onClose={
+                    onClose
+                }
+            />
 
-                    {spot.isFacility && (
-                        <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-[10px] font-black text-emerald-700">
-                            🏪{" "}
-                            {
-                                t.facilityParking
-                            }
-                        </span>
-                    )}
+            {/*
+             * ====================================
+             * ルートボタン
+             *
+             * shrink-0なので
+             * パネルが縮んでも残る
+             * ====================================
+             */}
 
-                    {spot.isAccessible && (
-                        <span className="rounded-full bg-blue-100 px-3 py-1.5 text-[10px] font-black text-blue-700">
-                            ♿{" "}
-                            {
-                                t.accessibleParking
-                            }
-                        </span>
-                    )}
-                </div>
-            )}
-
-            {spot.safetyScore !==
-                null &&
-                spot.safetyScore !==
-                undefined && (
-                    <div className="mt-3 rounded-2xl bg-emerald-50 p-4">
-                        <p className="text-xs font-bold">
-                            {t.safety}
-                        </p>
-
-                        <p className="text-lg font-black">
-                            {
-                                spot.safetyScore
-                            }
-                            /100
-                        </p>
-                    </div>
-                )}
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl bg-slate-50 p-3">
-                    📷 {t.camera}
-
-                    <p className="font-bold">
-                        {spot.securityCamera
-                            ? t.yes
-                            : t.no}
-                    </p>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-3">
-                    💡 {t.lighting}
-
-                    <p className="font-bold">
-                        {spot.streetLight
-                            ? t.yes
-                            : t.no}
-                    </p>
-                </div>
-            </div>
-
-            {spot.tags.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                    {spot.tags.map(
-                        (
-                            tag,
-                        ) => (
-                            <span
-                                key={
-                                    tag
-                                }
-                                className="rounded-full bg-sky-50 px-3 py-1 text-[10px]"
-                            >
-                                {
-                                    tag
-                                }
-                            </span>
-                        ),
-                    )}
-                </div>
-            )}
-
-            <a
-                href={
+            <ParkingRouteButton
+                navigationUrl={
                     navigationUrl
                 }
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 flex justify-center rounded-2xl bg-slate-950 py-3 text-sm font-black text-white"
-            >
-                🚗 {t.route}
-            </a>
-        </div>
-    );
-}
-
-function Info({
-                  label,
-                  value,
-              }: {
-    label: string;
-    value: string;
-}) {
-    return (
-        <div className="rounded-2xl bg-slate-100 p-3 text-center">
-            <p className="text-[9px] text-slate-400">
-                {label}
-            </p>
-
-            <p className="text-xs font-black">
-                {value}
-            </p>
+                isMonthly={
+                    spot.rentalType ===
+                    "monthly"
+                }
+                label={
+                    t.route
+                }
+            />
         </div>
     );
 }

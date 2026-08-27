@@ -20,28 +20,9 @@ import type {
 
 import {
     STUDENT_CHIPS,
-    TOURIST_CHIPS,
 } from "@/app/data/searchData";
 
-export type Mode =
-    | "student"
-    | "tourist";
-
 export function useSearch() {
-    /*
-     * ========================================
-     * モード
-     * ========================================
-     */
-
-    const [
-        mode,
-        setMode,
-    ] =
-        useState<Mode>(
-            "student",
-        );
-
     /*
      * ========================================
      * 検索文字
@@ -88,15 +69,12 @@ export function useSearch() {
 
     /*
      * ========================================
-     * モード別チップ
+     * 学生向けチップ
      * ========================================
      */
 
     const chips =
-        mode ===
-        "tourist"
-            ? TOURIST_CHIPS
-            : STUDENT_CHIPS;
+        STUDENT_CHIPS;
 
     /*
      * ========================================
@@ -119,35 +97,26 @@ export function useSearch() {
                 }
 
                 return ALL_LANDMARKS
+                    /*
+                     * 観光地は検索対象にしない
+                     *
+                     * この条件は、
+                     * 次にokinawa-data.tsから
+                     * 観光地データを消したら不要になる。
+                     */
                     .filter(
                         (
                             landmark,
-                        ) => {
-                            /*
-                             * 観光モード
-                             */
-                            if (
-                                mode ===
-                                "tourist"
-                            ) {
-                                return (
-                                    landmark.category ===
-                                    "tourist" ||
-                                    landmark.category ===
-                                    "area"
-                                );
-                            }
-
-                            /*
-                             * 学生モード
-                             */
-                            return (
-                                landmark.category !==
-                                "tourist"
-                            );
-                        },
+                        ) =>
+                            landmark.category !==
+                            "tourist",
                     )
 
+                    /*
+                     * 入力された文字が
+                     * 名前・かな・エリア・別名の
+                     * どこかに含まれているか調べる
+                     */
                     .filter(
                         (
                             landmark,
@@ -175,6 +144,9 @@ export function useSearch() {
                         },
                     )
 
+                    /*
+                     * 候補は最大8件
+                     */
                     .slice(
                         0,
                         8,
@@ -182,7 +154,6 @@ export function useSearch() {
             },
             [
                 query,
-                mode,
             ],
         );
 
@@ -227,6 +198,19 @@ export function useSearch() {
         landmark:
         Landmark,
     ) {
+        /*
+         * lat / lng がないデータは
+         * 目的地にできないので除外
+         */
+        if (
+            landmark.lat ===
+            undefined ||
+            landmark.lng ===
+            undefined
+        ) {
+            return;
+        }
+
         setTarget({
             name:
             landmark.name,
@@ -269,33 +253,6 @@ export function useSearch() {
 
     /*
      * ========================================
-     * モード変更
-     * ========================================
-     */
-
-    function switchMode(
-        nextMode:
-        Mode,
-    ) {
-        setMode(
-            nextMode,
-        );
-
-        setQuery(
-            "",
-        );
-
-        setTarget(
-            null,
-        );
-
-        setFocused(
-            false,
-        );
-    }
-
-    /*
-     * ========================================
      * チップ選択
      * ========================================
      */
@@ -309,6 +266,10 @@ export function useSearch() {
                 (
                     landmark,
                 ) => {
+                    /*
+                     * エリアチップなら
+                     * categoryがareaのものだけ探す
+                     */
                     if (
                         chip.kind ===
                         "area" &&
@@ -318,6 +279,19 @@ export function useSearch() {
                         return false;
                     }
 
+                    /*
+                     * 観光地は対象外
+                     */
+                    if (
+                        landmark.category ===
+                        "tourist"
+                    ) {
+                        return false;
+                    }
+
+                    /*
+                     * 名前または別名から探す
+                     */
                     return [
                         landmark.name,
                         ...landmark.aliases,
@@ -344,8 +318,13 @@ export function useSearch() {
         }
     }
 
+    /*
+     * ========================================
+     * 外へ渡す
+     * ========================================
+     */
+
     return {
-        mode,
         query,
         focused,
         target,
@@ -358,7 +337,6 @@ export function useSearch() {
 
         selectLandmark,
         clearSearch,
-        switchMode,
         handleChip,
     };
 }
