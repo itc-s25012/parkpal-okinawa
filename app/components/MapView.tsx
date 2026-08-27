@@ -123,13 +123,13 @@ export function MapView({
                     );
 
                 L.tileLayer(
-                    "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                     {
                         maxZoom:
-                            20,
+                            19,
 
                         attribution:
-                            "&copy; OpenStreetMap contributors &copy; CARTO",
+                            "&copy; OpenStreetMap contributors",
                     },
                 ).addTo(
                     map,
