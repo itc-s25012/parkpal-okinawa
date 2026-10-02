@@ -1,19 +1,6 @@
-import {
-    execFile,
-} from "node:child_process";
-
-import {
-    promisify,
-} from "node:util";
-
 import type {
     OverpassResponse,
 } from "./types";
-
-const execFileAsync =
-    promisify(
-        execFile,
-    );
 
 /*
  * ============================================
@@ -28,10 +15,16 @@ const OVERPASS_URLS = [
 ];
 
 /*
- * 1サーバーあたり最大15秒
+ * ============================================
+ * 1サーバーあたりの待ち時間
+ * ============================================
+ *
+ * 8秒経っても返ってこなければ、
+ * 次のOverpassサーバーを試します。
  */
-const OVERPASS_TIMEOUT_SECONDS =
-    15;
+
+const OVERPASS_TIMEOUT_MS =
+    8000;
 
 /*
  * ============================================
@@ -40,60 +33,94 @@ const OVERPASS_TIMEOUT_SECONDS =
  */
 
 async function fetchOverpass(
-    url:
-    string,
-
-    query:
-    string,
+    url: string,
+    query: string,
 ): Promise<OverpassResponse> {
-    const {
-        stdout,
-    } =
-        await execFileAsync(
-            "curl",
-            [
-                "-sS",
 
-                "--fail",
+    /*
+     * AbortControllerを使って、
+     * 通信が長すぎる場合に中止できるようにします。
+     */
 
-                "--connect-timeout",
-                "5",
+    const controller =
+        new AbortController();
 
-                "--max-time",
-                String(
-                    OVERPASS_TIMEOUT_SECONDS,
-                ),
-
-                "-X",
-                "POST",
-
-                url,
-
-                "-H",
-                "Content-Type: application/x-www-form-urlencoded",
-
-                "--data-urlencode",
-                `data=${query}`,
-            ],
-            {
-                maxBuffer:
-                    15 *
-                    1024 *
-                    1024,
+    const timeoutId =
+        setTimeout(
+            () => {
+                controller.abort();
             },
+            OVERPASS_TIMEOUT_MS,
         );
 
-    if (
-        !stdout.trim()
-    ) {
-        throw new Error(
-            "Overpass returned empty response",
+    try {
+
+        /*
+         * curlではなく、
+         * JavaScript標準のfetchを使います。
+         */
+
+        const response =
+            await fetch(
+                url,
+                {
+                    method:
+                        "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/x-www-form-urlencoded",
+                    },
+
+                    body:
+                        new URLSearchParams({
+                            data:
+                            query,
+                        }),
+
+                    signal:
+                    controller.signal,
+
+                    /*
+                     * Next.js側でキャッシュしない
+                     */
+
+                    cache:
+                        "no-store",
+                },
+            );
+
+        /*
+         * 200番台以外だった場合
+         */
+
+        if (
+            !response.ok
+        ) {
+            throw new Error(
+                `HTTP ${response.status} ${response.statusText}`,
+            );
+        }
+
+        /*
+         * JSONとして受け取る
+         */
+
+        const data =
+            await response.json();
+
+        return data　as OverpassResponse;
+
+    } finally {
+
+        /*
+         * タイマーを解除
+         */
+
+        clearTimeout(
+            timeoutId,
         );
     }
-
-    return JSON.parse(
-        stdout,
-    ) as OverpassResponse;
 }
 
 /*
@@ -103,17 +130,12 @@ async function fetchOverpass(
  */
 
 export function buildOverpassQuery(
-    lat:
-    number,
-
-    lng:
-    number,
-
-    radius:
-    number,
+    lat: number,
+    lng: number,
+    radius: number,
 ) {
     return `
-[out:json][timeout:12];
+[out:json][timeout:10];
 (
   node["amenity"="parking"](around:${radius},${lat},${lng});
   way["amenity"="parking"](around:${radius},${lat},${lng});
@@ -130,15 +152,11 @@ out center tags;
  */
 
 export async function loadOverpassParkings(
-    lat:
-    number,
-
-    lng:
-    number,
-
-    radius:
-    number,
+    lat: number,
+    lng: number,
+    radius: number,
 ) {
+
     const query =
         buildOverpassQuery(
             lat,
@@ -153,11 +171,17 @@ export async function loadOverpassParkings(
     let errorMessage =
         "";
 
+    /*
+     * 上から順番にOverpassサーバーを試します。
+     */
+
     for (
         const url
         of OVERPASS_URLS
         ) {
+
         try {
+
             console.log(
                 `Trying Overpass: ${url}`,
             );
@@ -172,15 +196,37 @@ export async function loadOverpassParkings(
                 `Overpass success: ${url}`,
             );
 
+            /*
+             * 成功したら、
+             * それ以上ほかのサーバーは試しません。
+             */
+
             break;
+
         } catch (
             error
             ) {
-            errorMessage =
-                error instanceof
-                Error
-                    ? error.message
-                    : "Overpass error";
+
+            /*
+             * AbortControllerによる
+             * タイムアウトかどうか確認
+             */
+
+            if (
+                error instanceof Error &&
+                error.name === "AbortError"
+            ) {
+
+                errorMessage =
+                    `Overpass timeout: ${url}`;
+
+            } else {
+
+                errorMessage =
+                    error instanceof Error
+                        ? error.message
+                        : "Overpass error";
+            }
 
             console.warn(
                 `Overpass failed: ${url}`,
@@ -188,6 +234,11 @@ export async function loadOverpassParkings(
             );
         }
     }
+
+    /*
+     * 全部失敗した場合は
+     * data = null のまま返ります。
+     */
 
     return {
         data,
